@@ -14,6 +14,11 @@ Original: https://github.com/CogentRedTester/mpv-scroll-list
 Changes:
 - Supports HOME and END keys to quickly jump to the start or the end of a list
 
+## boss
+
+Boss key.
+Pauses playback and minimizes the window on ESCAPE.
+
 ## chapter-list
 
 Original: https://github.com/CogentRedTester/mpv-scroll-list/blob/master/examples/chapter-list.lua
