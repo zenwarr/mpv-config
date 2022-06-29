@@ -33,7 +33,6 @@ opts.read_options(o)
 --adding the source directory to the package path and loading the module
 local list = dofile(mp.command_native({"expand-path", "~~/script-modules/scroll-list.lua"}))
 local listDest = nil
-local listItems = {}
 
 --modifying the list settings
 list.header = o.header
@@ -77,22 +76,25 @@ local function isTrackDisabled(trackId, dest)
 end
 
 local function selectTrack()
-    if list.list[list.selected] then
-        local itemData = listItems[list.selected]
-        if itemData == nil or itemData.disabled then
+    local selected = list.list[list.selected]
+    if selected then
+        if selected.disabled then
             return
         end
 
-        local trackId = itemData.id
+        local trackId = selected.id
+        if trackId == nil then
+            trackId = "no"
+        end
 
         if listDest == "video" then
-            mp.set_property_number("vid", trackId)
+            mp.set_property_native("vid", trackId)
         elseif listDest == "audio" then
-            mp.set_property_number("vid", trackId)
+            mp.set_property_native("aid", trackId)
         elseif listDest == "sub" then
-            mp.set_property_number("sid", trackId)
+            mp.set_property_native("sid", trackId)
         elseif listDest == "sub2" then
-            mp.set_property_number("secondary-sid", trackId)
+            mp.set_property_native("secondary-sid", trackId)
         end
     end
 end
@@ -190,8 +192,20 @@ end
 
 local function updateTrackList(listTitle, trackDest, formatter)
     list.header = listTitle .. ": " .. o.header
-    list.list = {}
-    listItems = {}
+    list.list = {
+        {
+            id = nil,
+            index = nil,
+            disabled = false,
+            ass = "○ None"
+        }
+    }
+
+    if isTrackSelected(nil, trackDest) then
+        list.selected = 1
+        list[1].ass = "● None"
+        list[1].style = [[{\c&H33ff66&}]]
+    end
 
     local tracks = getTracks(trackDest)
     if #tracks ~= 0 then
@@ -201,9 +215,13 @@ local function updateTrackList(listTitle, trackDest, formatter)
             local title = formatter(trackIndex)
             local isDisabled = isTrackDisabled(trackId, trackDest)
 
-            local listItem = {}
+            local listItem = {
+                id = trackId,
+                index = trackIndex,
+                disabled = isDisabled
+            }
             if isTrackSelected(trackId, trackDest) then
-                list.selected = i
+                list.selected = i + 1
                 listItem.style = [[{\c&H33ff66&}]]
                 listItem.ass = "● " .. title
             elseif isDisabled then
@@ -212,12 +230,7 @@ local function updateTrackList(listTitle, trackDest, formatter)
             else
                 listItem.ass = "○ " .. title
             end
-            list.list[i] = listItem
-            listItems[i] = {
-                id = trackId,
-                index = trackIndex,
-                disabled = isDisabled
-            }
+            table.insert(list.list, listItem)
         end
     end
 
