@@ -26,6 +26,15 @@ Original: https://github.com/CogentRedTester/mpv-scroll-list/blob/master/example
 Changes:
 - Initially selects the current chapter instead of the first one on list open
 
+## load-profiles
+
+This script is used to load platform-dependent profiles.
+One should specify profiles to load in `script-opts/load-profiles.conf` file in the following form:
+
+```
+profiles=one,two,three
+```
+
 ## pause-indicator
 
 Original: https://github.com/oltodosel/mpv-scripts/blob/master/pause-indicator.lua
