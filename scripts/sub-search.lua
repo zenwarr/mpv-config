@@ -734,6 +734,27 @@ function open_subtitles_file()
     return nil
 end
 
+function get_lines(inputstr)
+    local lines = {}
+
+    local tail = 1
+    for head = 1, #inputstr do
+        local ch = inputstr:sub(head, head)
+        if ch == "\n" then
+            table.insert(lines, inputstr:sub(tail, head - 1))
+            tail = head + 1
+        elseif head == #inputstr then
+            table.insert(lines, inputstr:sub(tail, head))
+        end
+    end
+
+    return lines
+end
+
+function trim(s)
+    return (s:gsub("^%s*(.-)%s*$", "%1"))
+end
+
 function load_subtitles_file()
     local f = open_subtitles_file()
 
@@ -741,7 +762,9 @@ function load_subtitles_file()
         return false
     end
 
-    data = f:read("*all")
+    local data = f:read("*all")
+    f:close()
+
     data = string.gsub(data, "\r\n", "\n")
     data = string.gsub(data, "<b>", "")
     data = string.gsub(data, "</b>", "")
@@ -749,13 +772,52 @@ function load_subtitles_file()
     data = string.gsub(data, "</i>", "")
     data = string.gsub(data, "<u>", "")
     data = string.gsub(data, "</u>", "")
-    f:close()
 
-    return true
+    local result = {}
+    local state = "waiting_index"
+    local cur_line = {}
+    for _, line in ipairs(get_lines(data)) do
+        line = trim(line)
+        if state == "waiting_index" then
+            if cur_line.text then
+                table.insert(result, cur_line)
+                cur_line = {}
+            end
+
+            if line:match("^%d+$") then
+                state = "waiting_time"
+            end
+        elseif state == "waiting_time" then
+            local time_text = line:match("^(%d%d:%d%d:%d%d,%d%d%d) ")
+            if time_text then
+                cur_line.time_text = time_text
+                cur_line.time = srt_time_to_seconds(time_text)
+                state = "waiting_text"
+            else
+                state = "waiting_index"
+            end
+        elseif state == "waiting_text" then
+            if #line == 0 then
+                table.insert(result, cur_line)
+                cur_line = {}
+                state = "waiting_index"
+            elseif cur_line.text then
+                cur_line.text = cur_line.text .. " " .. line
+            else
+                cur_line.text = line
+            end
+        end
+    end
+
+    if cur_line.text then
+        table.insert(result, cur_line)
+    end
+
+    return result
 end
 
 -- https://www.lua.org/pil/20.4.html
-function nocase(s)
+function make_nocase_pattern(s)
     s = string.gsub(s, "%a", function (c)
         return string.format("[%s%s]", string.lower(c), string.upper(c))
       end)
@@ -778,10 +840,12 @@ function highlight_match(text, match_text)
     return before .. "{\\c&HFF00&}" .. match .. "{\\c&HFFFFFF&}" .. after
 end
 
+sub_lines = nil
+
 function update_search_results(phrase)
-    if data == nil then
-        local ret = load_subtitles_file()
-        if ret ~= true then
+    if sub_lines == nil then
+        sub_lines = load_subtitles_file()
+        if sub_lines == false then
             mp.osd_message("Can't find external subtitles")
             return
         end
@@ -799,19 +863,19 @@ function update_search_results(phrase)
     local closest_lower_time = nil
     local cur_time = mp.get_property_native("time-pos")
 
-    local pat = "(%d%d:%d%d:%d%d,%d%d%d) %-%-> (%d%d:%d%d:%d%d,%d%d%d)\n([^\n]*" .. nocase(phrase) .. "[^\n]*)"
-    for start_time, end_time, text in string.gmatch(data, pat) do
-        local start_time_seconds = srt_time_to_seconds(start_time)
+    local pat = "(" .. make_nocase_pattern(phrase) .. ")"
+    for _, sub_line in ipairs(sub_lines) do
+        if string.match(sub_line.text, pat) then
+            table.insert(result_list.list, {
+                time = sub_line.time + 0.01, -- to ensure that the subtitle is visible
+                time_text = sub_line.time_text,
+                ass = result_list.ass_escape(sub_line.time_text .. ": ") .. highlight_match(sub_line.text, phrase),
+            })
 
-        table.insert(result_list.list, {
-            time = start_time_seconds + 0.01, -- to ensure that the subtitle is visible
-            time_text = start_time,
-            ass = result_list.ass_escape(start_time .. ": ") .. highlight_match(text, phrase),
-        })
-
-        if start_time_seconds <= cur_time and (closest_lower_time == nil or closest_lower_time < start_time_seconds) then
-            closest_lower_time = start_time_seconds
-            closest_lower_index = #result_list.list
+            if sub_line.time <= cur_time and (closest_lower_time == nil or closest_lower_time < sub_line.time) then
+                closest_lower_time = sub_line.time
+                closest_lower_index = #result_list.list
+            end
         end
     end
 
