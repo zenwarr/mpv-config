@@ -865,7 +865,7 @@ function update_search_results(phrase)
 
     local pat = "(" .. make_nocase_pattern(phrase) .. ")"
     for _, sub_line in ipairs(sub_lines) do
-        if string.match(sub_line.text, pat) then
+        if phrase == "*" or string.match(sub_line.text, pat) then
             table.insert(result_list.list, {
                 time = sub_line.time + 0.01, -- to ensure that the subtitle is visible
                 time_text = sub_line.time_text,
