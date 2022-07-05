@@ -1,6 +1,7 @@
 local mp = require("mp")
 local msg = require("mp.msg")
 local utils = require("mp.utils")
+local options = require("mp.options")
 
 
 local opts = {
