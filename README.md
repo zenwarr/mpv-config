@@ -63,6 +63,11 @@ Changes:
 - Searches in a subtitle file active as a primary subtitle instead of attempting to find subtitle files matching video name
 - Outputs all search results in OSD list instead of jumping between them with a hotkey
 
+## toggle-osc
+
+Allows toggling osc on/off with a hotkey.
+Bound to `TAB` and single right mouse button click in `input.conf`.
+
 ## track-menu
 
 Shows a navigable menu with list of chapters for the current video.
