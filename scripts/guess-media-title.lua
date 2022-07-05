@@ -37,8 +37,10 @@ local function on_done(success, result, error)
 
     local media_title = build_title(utils.parse_json(trim(result.stdout)))
 
-    mp.set_property_native("force-media-title", media_title)
-    show_flash_message("Detected media title: {\\b1}" .. media_title)
+    if media_title ~= nil then
+        mp.set_property_native("force-media-title", media_title)
+        show_flash_message("Detected media title: {\\b1}" .. media_title)
+    end
 end
 
 
