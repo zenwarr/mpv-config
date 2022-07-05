@@ -88,12 +88,20 @@ local function restoreSubs()
     if subTrack ~= nil then
       mp.set_property("sid", subTrack.id)
     end
+
+    if fileData.sub1_vis ~= nil then
+      mp.set_property_native("sub-visibility", fileData.sub1_vis)
+    end
   end
 
   if fileData.sub2 ~= nil then
     local subTrack = getTrackByTitle(fileData.sub2)
     if subTrack ~= nil then
       mp.set_property("secondary-sid", subTrack.id)
+    end
+
+    if fileData.sub2_vis ~= nil then
+      mp.set_property_native("secondary-sub-visibility", fileData.sub2_vis)
     end
   end
 
@@ -102,12 +110,14 @@ local function restoreSubs()
 end
 
 
-local function saveData(sub1, sub2)
+local function saveData(sub1, sub2, sub1_vis, sub2_vis)
   local fileId = getFileId()
   savedData[fileId] = {
     used = os.time(),
     sub1 = sub1,
-    sub2 = sub2
+    sub2 = sub2,
+    sub1_vis = sub1_vis,
+    sub2_vis = sub2_vis
   }
 
   saveDataFile()
@@ -118,7 +128,7 @@ local function onTracksChanged()
   local sub = mp.get_property_native("current-tracks/sub")
   local sub2 = mp.get_property_native("current-tracks/sub2")
 
-  saveData(getTrackTitle(sub), getTrackTitle(sub2))
+  saveData(getTrackTitle(sub), getTrackTitle(sub2), mp.get_property_native("sub-visibility"), mp.get_property_native("secondary-sub-visibility"))
 end
 
 mp.register_event("file-loaded", function()
@@ -126,4 +136,6 @@ mp.register_event("file-loaded", function()
 
   mp.observe_property("current-tracks/sub", "native", onTracksChanged)
   mp.observe_property("current-tracks/sub2", "native", onTracksChanged)
+  mp.observe_property('sub-visibility', "native", onTracksChanged)
+  mp.observe_property('secondary-sub-visibility', "native", onTracksChanged)
 end)

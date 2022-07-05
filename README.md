@@ -46,6 +46,7 @@ Changes:
 
 Saves selected subtitle tracks to `saved-subs.json` file in mpv directory and restores them whenever file is loaded.
 It is required because mpv does not remember selected subtitles (at least secondary subtitle tracks).
+It also stores subtitle visibility state.
 
 ## slicing-copy
 
