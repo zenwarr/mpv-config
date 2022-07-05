@@ -3,6 +3,13 @@ local msg = require("mp.msg")
 local utils = require("mp.utils")
 
 
+local opts = {
+    show_detection_message = false
+}
+
+options.read_options(opts, "guess-media-title")
+
+
 local function trim(s)
     return (s:gsub("^%s*(.-)%s*$", "%1"))
 end
@@ -39,7 +46,10 @@ local function on_done(success, result, error)
 
     if media_title ~= nil then
         mp.set_property_native("force-media-title", media_title)
-        show_flash_message("Detected media title: {\\b1}" .. media_title)
+
+        if opts.show_detection_message then
+            show_flash_message("Detected media title: {\\b1}" .. media_title)
+        end
     end
 end
 
