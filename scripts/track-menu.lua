@@ -20,7 +20,7 @@ local opts = require("mp.options")
 local propNative = mp.get_property_native
 
 local o = {
-    header = "Track List [%cursor%/%total%]\\N ------------------------------------",
+    header = "Track List\\N ------------------------------------",
     wrap = true,
     key_scroll_down = "DOWN WHEEL_DOWN",
     key_scroll_up = "UP WHEEL_UP",
