@@ -26,6 +26,15 @@ Original: https://github.com/CogentRedTester/mpv-scroll-list/blob/master/example
 Changes:
 - Initially selects the current chapter instead of the first one on list open
 
+## guess-media-title
+
+Uses [guessit](https://github.com/guessit-io/guessit) to detect media title by filename.
+Upon detection, sets `force-media-title` variable and shows the detected title on screen.
+
+Useful for getting cleaner screenshot file names.
+
+Requires `guessit` to be installed and accessible as `guessit` command.
+
 ## load-profiles
 
 This script is used to load platform-dependent profiles.
