@@ -4,3 +4,4 @@ watch_later
 saved-subs.json
 script-opts/load-profiles.conf
 !script-opts/.gitkeep
+history.log
