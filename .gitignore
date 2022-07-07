@@ -2,6 +2,7 @@
 cutfragments
 watch_later
 saved-subs.json
+saved-props.json
 script-opts/load-profiles.conf
 !script-opts/.gitkeep
 history.log

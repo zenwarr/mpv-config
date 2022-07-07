@@ -150,9 +150,6 @@ function draw_list(list, start, choice)
         else
             msg = msg.."("..key..")  "..p.."\\N\\N"
         end
-        if not list_drawn then
-            print("("..key..") "..p)
-        end
     end
     if o.ellipsis and start+10 < size then
         msg = msg .."..."

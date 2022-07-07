@@ -51,6 +51,20 @@ Original: https://github.com/oltodosel/mpv-scripts/blob/master/pause-indicator.l
 Changes:
 - Pause icon is now less obtrusive and is placed in top right corner.
 
+## recent
+
+Original: https://github.com/hacel/recent
+
+## remember-props
+
+When a property changes, it saves it to restore it on next start.
+Saved values are not file-specific.
+List of properties to save is configured in `script-opts/remember-props.conf` file:
+
+```
+props=one,two,three
+```
+
 ## restore-subtitles
 
 Saves selected subtitle tracks to `saved-subs.json` file in mpv directory and restores them whenever file is loaded.
