@@ -1,5 +1,4 @@
 local mp = require("mp")
-local msg = require("mp.msg")
 
 local osc_visible = false
 
