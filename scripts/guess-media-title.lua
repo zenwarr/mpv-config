@@ -1,3 +1,15 @@
+--[[
+Uses [guessit](https://github.com/guessit-io/guessit) to detect media title by filename.
+Upon detection, sets `force-media-title` variable.
+Useful for getting cleaner screenshot file names.
+
+Script options can be specified in `script-opts/guess-media-title.conf` file.
+If `show_detection_message` is set to `yes`, the script is going to show a flash message in OSD with a detected media title.
+
+Requires `guessit` to be installed and runnable as `guessit` command.
+--]]
+
+
 local mp = require("mp")
 local msg = require("mp.msg")
 local utils = require("mp.utils")
@@ -62,5 +74,6 @@ local function guess_media_title()
         args = { "guessit", "--json", mp.get_property_native("filename") }
     }, on_done)
 end
+
 
 mp.register_event("file-loaded", guess_media_title)
