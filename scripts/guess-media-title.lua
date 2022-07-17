@@ -40,7 +40,7 @@ end
 
 
 local function build_title(info)
-    if info.type == "episode" and info.season ~= nil and info.episode ~= nil then
+    if info.type == "episode" and info.season ~= nil and type(info.season) == "number" and info.episode ~= nil and type(info.episode) == "number" then
         local episode_spec = string.format("s%02de%02d", info.season, info.episode)
         return string.format("%s (%s)", info.title, episode_spec)
     else
