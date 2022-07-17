@@ -86,7 +86,7 @@ local function info(s)
 end
 
 local function get_outname(shift, endpos)
-    local name = mp.get_property("filename/no-ext")
+    local name = mp.get_property("media-title")
     local ext = get_ext()
     name = string.format("%s_%s-%s.%s", name, timestamp(shift), timestamp(endpos), ext)
     return name:gsub(":", "-")
@@ -148,7 +148,7 @@ local function toggle_mark()
     else
         cut_pos = pos
         info(string.format("Marked %s as start position", timestamp(pos)))
-    end    
+    end
 end
 
 local function toggle_audio()
