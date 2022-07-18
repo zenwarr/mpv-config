@@ -73,12 +73,13 @@ It also stores subtitle visibility state.
 
 ## slicing-copy
 
-Quickly cut video segment into a new file with ffmpeg.
+Cut video segment into a new file with ffmpeg.
 
 Original: https://github.com/snylonue/mpv_slicing_copy/blob/master/slicing_copy.lua
 
 Changes:
 - uses `media-title` for generated filenames instead of video file name
+- not fast cutting like original script (using `copy` as a codec for ffmpeg), re-encodes the video each time to avoid problems with keyframes.
 
 ## sub-search
 

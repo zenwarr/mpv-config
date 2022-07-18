@@ -11,8 +11,6 @@ local o = {
     ffmpeg_path = "ffmpeg",
     target_dir = "~~/cutfragments",
     overwrite = false, -- whether to overwrite exist files
-    vcodec = "copy",
-    acodec = "copy",
 }
 
 options.read_options(o)
@@ -111,20 +109,31 @@ local function cut(shift, endpos)
         cmds:arg('-referer', referer)
     end
     cmds:arg("-ss", tostring(shift))
+        :arg("-to", tostring(endpos))
         :arg("-i", inpath)
-        :arg("-t", tostring(endpos - shift))
-        :arg("-c:v", o.vcodec)
-        :arg("-c:a", o.acodec)
         :arg(not copy_audio and "-an" or nil)
         :arg(outpath)
     msg.info("Run commands: " .. cmds:as_str())
+
+    local enc_overlay = mp.create_osd_overlay('ass-events')
+    enc_overlay.data = "{\\a3\\fs20}Encoding cut fragment..."
+    enc_overlay:update()
+
     local res, err = cmds:run()
     if err then
         msg.error(utils.to_string(err))
+        enc_overlay.data = "{\\a3\\fs20\\c&HFF&}Error: " .. utils.to_string(err)
+        enc_overlay:update()
     elseif res.stderr ~= "" or res.stdout ~= "" then
         msg.info("stderr: " .. (res.stderr:gsub("^%s*(.-)%s*$", "%1"))) -- trim stderr
         msg.info("stdout: " .. (res.stdout:gsub("^%s*(.-)%s*$", "%1"))) -- trim stdout
+        enc_overlay.data = "{\\a3\\fs20\\c&HFF00&}Encoding completed"
+        enc_overlay:update()
     end
+
+    mp.add_timeout(2, function()
+        enc_overlay:remove()
+    end)
 end
 
 local function toggle_mark()
