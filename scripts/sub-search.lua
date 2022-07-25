@@ -798,7 +798,9 @@ function load_subtitles_file()
             end
         elseif state == "waiting_text" then
             if #line == 0 then
-                table.insert(result, cur_line)
+                if cur_line.text then
+                    table.insert(result, cur_line)
+                end
                 cur_line = {}
                 state = "waiting_index"
             elseif cur_line.text then
@@ -865,7 +867,7 @@ function update_search_results(phrase)
 
     local pat = "(" .. make_nocase_pattern(phrase) .. ")"
     for _, sub_line in ipairs(sub_lines) do
-        if phrase == "*" or string.match(sub_line.text, pat) then
+	if phrase == "*" or string.match(sub_line.text, pat) then
             table.insert(result_list.list, {
                 time = sub_line.time + 0.01, -- to ensure that the subtitle is visible
                 time_text = sub_line.time_text,
