@@ -6,7 +6,7 @@ Useful for getting cleaner screenshot file names.
 Script options can be specified in `script-opts/guess-media-title.conf` file.
 If `show_detection_message` is set to `yes`, the script is going to show a flash message in OSD with a detected media title.
 
-Requires `guessit` to be installed and runnable as `guessit` command.
+Requires `guessit` to be installed for a Python interpreter accessible as `python`.
 --]]
 
 
@@ -71,7 +71,7 @@ local function guess_media_title()
     mp.command_native_async({
         name = "subprocess",
         capture_stdout = true,
-        args = { "guessit", "--json", mp.get_property_native("filename") }
+        args = { "python", "-m", "guessit", "--json", mp.get_property_native("filename") }
     }, on_done)
 end
 
