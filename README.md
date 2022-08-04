@@ -26,6 +26,11 @@ Original: https://github.com/CogentRedTester/mpv-scroll-list/blob/master/example
 Changes:
 - Initially selects the current chapter instead of the first one on list open
 
+## clock
+
+Shows system clock in bottom right corner (position is configurable).
+Can be toggled on/off with `F12` (configurable).
+
 ## guess-media-title
 
 Uses [guessit](https://github.com/guessit-io/guessit) to detect media title by filename.
