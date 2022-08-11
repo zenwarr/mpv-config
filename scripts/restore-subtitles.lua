@@ -1,3 +1,9 @@
+--[[
+Saves selected subtitle tracks to `saved-subs.json` file in mpv directory and restores them whenever file is loaded.
+Differs from `watch-later`-saved data in that it saves secondary subtitles too (and uses subtitle file paths instead of ids).
+It also stores subtitle visibility state for a secondary subtitles too.
+]]--
+
 local mp = require "mp"
 local utils = require "mp.utils"
 

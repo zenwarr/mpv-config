@@ -62,7 +62,7 @@ Original: https://github.com/hacel/recent
 
 ## remember-props
 
-When a property changes, it saves it to restore it on next start.
+When a property changes, it saves it to restore on next start.
 Saved values are not file-specific.
 List of properties to save is configured in `script-opts/remember-props.conf` file:
 
@@ -73,8 +73,8 @@ props=one,two,three
 ## restore-subtitles
 
 Saves selected subtitle tracks to `saved-subs.json` file in mpv directory and restores them whenever file is loaded.
-It is required because mpv does not remember selected subtitles (at least secondary subtitle tracks).
-It also stores subtitle visibility state.
+Differs from `watch-later`-saved data in that it saves secondary subtitles too (and uses subtitle file paths instead of ids).
+It also stores subtitle visibility state for a secondary subtitles too.
 
 ## slicing-copy
 

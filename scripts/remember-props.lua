@@ -1,3 +1,15 @@
+--[[
+
+When a property changes, it saves it to restore on next start.
+Saved values are not file-specific.
+List of properties to save is configured in `script-opts/remember-props.conf` file:
+
+```
+props=one,two,three
+```
+
+]]--
+
 local mp = require("mp")
 local options = require("mp.options")
 local utils = require("mp.utils")
