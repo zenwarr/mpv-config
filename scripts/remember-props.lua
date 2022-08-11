@@ -15,7 +15,7 @@ local options = require("mp.options")
 local utils = require("mp.utils")
 
 
-local data_file_path = (os.getenv('APPDATA') or os.getenv('HOME') .. '/.config') ..'/mpv/saved-props.json'
+local data_file_path = (mp.command_native({'expand-path', '~~/saved-props.json'}))
 
 
 local function split(inputstr, sep)
