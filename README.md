@@ -86,7 +86,7 @@ Changes:
 - uses `media-title` for generated filenames instead of video file name
 - not fast cutting like original script (using `copy` as a codec for ffmpeg), re-encodes the video each time to avoid problems with keyframes.
 
-## sub-search
+## subtitle-search
 
 Searching for text inside subtitles.
 
