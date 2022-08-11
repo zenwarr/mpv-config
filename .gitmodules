@@ -1,0 +1,3 @@
+[submodule "script-modules/utf8"]
+	path = script-modules/utf8
+	url = git@github.com:Stepets/utf8.lua.git
