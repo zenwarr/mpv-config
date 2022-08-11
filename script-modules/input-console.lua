@@ -1,3 +1,5 @@
+-- copied from here: https://github.com/mpv-player/mpv/blob/ebaf6a6cfa24a78d9041389974568b9db7df6a71/player/lua/console.lua
+
 -- Copyright (C) 2019 the mpv developers
 --
 -- Permission to use, copy, modify, and/or distribute this software for any
@@ -368,6 +370,10 @@ end
 function handle_enter()
     if line == '' then
         return
+    end
+
+    if history[#history] ~= line then
+        history[#history + 1] = line
     end
 
     update_search_results(line)
