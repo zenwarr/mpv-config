@@ -7,7 +7,7 @@ It also stores subtitle visibility state for a secondary subtitles too.
 local mp = require "mp"
 local utils = require "mp.utils"
 
-local dataFilePath = (os.getenv('APPDATA') or os.getenv('HOME') .. '/.config') ..'/mpv/saved-subs.json'
+local dataFilePath = (mp.command_native({'expand-path', '~~/saved-subs.json'}))
 local jsonFile = io.open(dataFilePath, 'a+')
 local savedData = utils.parse_json(jsonFile:read("*all"))
 if savedData == nil then
