@@ -95,6 +95,10 @@ Original: https://github.com/kelciour/mpv-scripts/blob/master/sub-search.lua
 Changes:
 - Searches in a subtitle file active as a primary subtitle instead of attempting to find subtitle files matching video name
 - Outputs all search results in OSD list instead of jumping between them with a hotkey
+- Supports searching unicode text (subtitles should be encoded in utf8)
+- Embedded console replaced with more recent variant from mpv sources (to support unicode input)
+
+Requires `script-modules/utf8` directory to work.
 
 ## toggle-osc
 
