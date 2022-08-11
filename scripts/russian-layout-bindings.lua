@@ -1,7 +1,14 @@
 --[[
 As mpv does not natively support shortcuts independent of the keyboard layout (https://github.com/mpv-player/mpv/issues/351), this script tries to workaround this issue for some limited cases with russian (йцукен) keyboard layout.
-Upon startup, it takes currently active bindings from `input-bindings` property and duplicates them for russian layout.
-You can adapt the script for your preferred layout, but it won't (of course) work for layouts sharing unicode characters with english layout.
+Upon startup, it takes currently active bindings from `input-bindings` property and duplicates them for the russian layout.
+You can adapt the script for your preferred layout, but it won't (of course) work for layouts sharing unicode characters with the english layout.
+
+Known issues:
+- When bindings are defined in `input.conf`, mpv determines by the attached command whether this binding should be repeatable or not.
+  But when defining a binding from inside a script, the script should decide whether the binding should be repeatable.
+  And mpv does not give any information on whether a binding was detected to be repeatable, so we have no easy way to determine this.
+  So this script uses a quick and dirty solution: it just checks if the command has `repeatable` word in it and if it does, it sets the binding to be repeatable.
+  And if you define a binding in `input.conf` and you want its translated counterpart to be repeatable too, you should explicitly add `repeatable` prefix to the command (for example: translated shortcut for `. sub-seek 1` is not going to be repeatable while `. repeatable sub-seek 1` is).
 ]]--
 
 local mp = require("mp")
@@ -62,6 +69,7 @@ key_mapping["N"] = "Т"
 key_mapping["M"] = "Ь"
 key_mapping[","] = "б"
 key_mapping["."] = "ю"
+key_mapping["`"] = "ё"
 
 local bindings = mp.get_property_native("input-bindings")
 
@@ -72,6 +80,17 @@ local function split(inputstr, sep)
     end
     return result
 end
+
+function guess_repeatable_command(cmd)
+    local parts = split(cmd, " ")
+    for _, part in ipairs(parts) do
+        if part == "repeatable" then
+            return true
+        end
+    end
+    return false
+end
+
 
 -- iterate over all bindings and add translated bindings
 for _, binding in ipairs(bindings) do
@@ -92,6 +111,8 @@ for _, binding in ipairs(bindings) do
         translated_key = table.concat(translated, "+")
         mp.add_key_binding(translated_key, function()
             mp.command(binding.cmd)
-        end)
+        end, {
+            repeatable = guess_repeatable_command(binding.cmd)
+        })
     end
 end

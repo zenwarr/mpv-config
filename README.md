@@ -79,8 +79,15 @@ It also stores subtitle visibility state for a secondary subtitles too.
 ## russian-layout-bindings
 
 As mpv does not natively support shortcuts independent of the keyboard layout (https://github.com/mpv-player/mpv/issues/351), this script tries to workaround this issue for some limited cases with russian (йцукен) keyboard layout.
-Upon startup, it takes currently active bindings from `input-bindings` property and duplicates them for russian layout.
-You can adapt the script for your preferred layout, but it won't (of course) work for layouts sharing unicode characters with english layout.
+Upon startup, it takes currently active bindings from `input-bindings` property and duplicates them for the russian layout.
+You can adapt the script for your preferred layout, but it won't (of course) work for layouts sharing unicode characters with the english layout.
+
+Known issues:
+- When bindings are defined in `input.conf`, mpv determines by the attached command whether this binding should be repeatable or not.
+  But when defining a binding from inside a script, the script should decide whether the binding should be repeatable.
+  And mpv does not give any information on whether a binding was detected to be repeatable, so we have no easy way to determine this.
+  So this script uses a quick and dirty solution: it just checks if the command has `repeatable` word in it and if it does, it sets the binding to be repeatable.
+  And if you define a binding in `input.conf` and you want its translated counterpart to be repeatable too, you should explicitly add `repeatable` prefix to the command (for example: translated shortcut for `. sub-seek 1` is not going to be repeatable while `. repeatable sub-seek 1` is).
 
 ## slicing-copy
 
