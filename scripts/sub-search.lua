@@ -114,7 +114,6 @@ function load_subtitles_file()
         elseif state == "waiting_time" then
             local time_text = line:match("^(%d%d:%d%d:%d%d,%d%d%d) ")
             if time_text then
-                cur_line.time_text = time_text
                 cur_line.time = srt_time_to_seconds(time_text)
                 state = "waiting_text"
             else
@@ -166,6 +165,31 @@ function highlight_match(text, match_text)
     return before .. "{\\c&HFF00&}" .. match .. "{\\c&HFFFFFF&}" .. after
 end
 
+function adjust_sub_time(time)
+    local delay = mp.get_property_native("sub-delay")
+    print(time, delay)
+    if delay == nil then
+        return time
+    end
+    return time + delay
+end
+
+function divmod (a, b)
+    return math.floor(a / b), a % b
+end
+
+function format_time(time)
+    decimals = decimals == nil and 3 or decimals
+    sep = sep and sep or "."
+    local s = time
+    local h, s = divmod(s, 60*60)
+    local m, s = divmod(s, 60)
+
+    local second_format = string.format("%%0%d.%df", 2+(decimals > 0 and decimals+1 or 0), decimals)
+
+    return string.format("%02d"..sep.."%02d"..sep..second_format, h, m, s)
+end
+
 sub_lines = nil
 
 function update_search_results(phrase)
@@ -192,14 +216,14 @@ function update_search_results(phrase)
     local pat = "(" .. make_nocase_pattern(phrase) .. ")"
     for _, sub_line in ipairs(sub_lines) do
         if phrase == "*" or utf8.match(sub_line.text, pat) then
+            local sub_time = adjust_sub_time(sub_line.time)
             table.insert(result_list.list, {
-                time = sub_line.time + 0.01, -- to ensure that the subtitle is visible
-                time_text = sub_line.time_text,
-                ass = result_list.ass_escape(sub_line.time_text .. ": ") .. highlight_match(sub_line.text, phrase),
+                time = sub_time + 0.01, -- to ensure that the subtitle is visible
+                ass = result_list.ass_escape(format_time(sub_time) .. ": ") .. highlight_match(sub_line.text, phrase),
             })
 
-            if sub_line.time <= cur_time and (closest_lower_time == nil or closest_lower_time < sub_line.time) then
-                closest_lower_time = sub_line.time
+            if sub_line.time <= cur_time and (closest_lower_time == nil or closest_lower_time < sub_time) then
+                closest_lower_time = sub_time
                 closest_lower_index = #result_list.list
             end
         end
