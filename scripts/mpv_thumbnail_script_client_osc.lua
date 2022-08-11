@@ -2928,6 +2928,13 @@ layouts["slimbox"] = function ()
     end
 
 
+    local titlerowY = posY - ele_h - 20
+    lo = add_layout("title")
+    lo.geometry = {x = posX, y = titlerowY, an = 8, w = 496, h = 12}
+    lo.style = osc_styles.vidtitle
+    lo.button.maxchars = user_opts.boxmaxchars
+
+
     lo = add_layout("seekbar")
     lo.geometry =
         {x = posX, y = posY - 1, an = 2, w = inner_w, h = ele_h}
