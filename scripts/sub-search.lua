@@ -1,18 +1,31 @@
 --[[
+Based on sub-search script by kelciour (https://github.com/kelciour/mpv-scripts/blob/master/sub-search.lua)
+
+Differences from the original script:
+
+- Searches in a subtitle file active as a primary subtitle instead of attempting to find subtitle files matching video name
+- Outputs all search results in OSD list instead of jumping between them with a hotkey (the closest subtitle is selected by default)
+- Supports searching unicode text (subtitles should be encoded as utf8, please re-encode your subtitles if you get no results searching for unicode text)
+- Embedded console replaced with more recent variant from mpv sources (to support unicode input)
+- Takes into account current `sub-delay` value
+- Can use special phrase "*" to show all subtitles
+
+Requires `script-modules/utf8` repository, `script-modules/scroll-list.lua` and `script-modules/input-console.lua` to work.
+
+You can clone `script-modules/utf8` repository with the following command (assuming you are in mpv config directory): `git clone git@github.com:Stepets/utf8.lua.git script-modules/utf8`
+
 Usage:
     Press Ctrl + F, print something and press Enter.
 Example:
     'You are playing Empire Strikes Back and press Ctrl+F, type "I am you father" + Enter
     and voilá, the scene pops up.'
 Additional Keybidings:
-           Ctrl+F - open or close search console
+    Ctrl+F - open or close search console
 More Information:
     The search is case insensitive and depends on the external .srt subtitles.
 Console Settings:
     Update repl.lua default options below to increase the default font size.
     For example, scale or font-size.
-Script Status:
-    Experimental.
 --]]
 
 package.path = package.path .. ";" .. mp.command_native({"expand-path", "~~/script-modules/?.lua"})
