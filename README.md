@@ -95,10 +95,12 @@ Original: https://github.com/kelciour/mpv-scripts/blob/master/sub-search.lua
 Changes:
 - Searches in a subtitle file active as a primary subtitle instead of attempting to find subtitle files matching video name
 - Outputs all search results in OSD list instead of jumping between them with a hotkey
-- Supports searching unicode text (subtitles should be encoded in utf8)
+- Supports searching unicode text (subtitles should be encoded as utf8, please re-encode your subtitles if you get no results searching for unicode text)
 - Embedded console replaced with more recent variant from mpv sources (to support unicode input)
 
-Requires `script-modules/utf8` directory to work.
+Requires `script-modules/utf8` repository, `script-modules/scroll-list.lua` and `script-modules/input-console.lua` to work.
+
+You can clone `script-modules/utf8` repository with the following command (assuming you are in mpv config directory): `git clone git@github.com:Stepets/utf8.lua.git script-modules/utf8`
 
 ## toggle-osc
 
