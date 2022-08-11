@@ -76,6 +76,12 @@ Saves selected subtitle tracks to `saved-subs.json` file in mpv directory and re
 Differs from `watch-later`-saved data in that it saves secondary subtitles too (and uses subtitle file paths instead of ids).
 It also stores subtitle visibility state for a secondary subtitles too.
 
+## russian-layout-bindings
+
+As mpv does not natively support shortcuts independent of the keyboard layout (https://github.com/mpv-player/mpv/issues/351), this script tries to workaround this issue for some limited cases with russian (йцукен) keyboard layout.
+Upon startup, it takes currently active bindings from `input-bindings` property and duplicates them for russian layout.
+You can adapt the script for your preferred layout, but it won't (of course) work for layouts sharing unicode characters with english layout.
+
 ## slicing-copy
 
 Cut video segment into a new file with ffmpeg.
