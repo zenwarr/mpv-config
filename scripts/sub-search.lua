@@ -167,7 +167,6 @@ end
 
 function adjust_sub_time(time)
     local delay = mp.get_property_native("sub-delay")
-    print(time, delay)
     if delay == nil then
         return time
     end
@@ -179,8 +178,8 @@ function divmod (a, b)
 end
 
 function format_time(time)
-    decimals = decimals == nil and 3 or decimals
-    sep = sep and sep or "."
+    decimals = 3
+    sep = "."
     local s = time
     local h, s = divmod(s, 60*60)
     local m, s = divmod(s, 60)
