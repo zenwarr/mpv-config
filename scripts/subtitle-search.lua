@@ -63,8 +63,8 @@ function open_file(path)
     return nil
 end
 
-function get_primary_sub_filename()
-    local active_track = mp.get_property_native("current-tracks/sub")
+function get_sub_filename(track_name)
+    local active_track = mp.get_property_native("current-tracks/" .. track_name)
     if active_track == nil then
         return nil
     end
@@ -100,7 +100,11 @@ function trim(s)
     return (s:gsub("^%s*(.-)%s*$", "%1"))
 end
 
-function load_sub(path)
+function load_sub(path, prefix)
+    if not path then
+        return nil
+    end
+
     local cached = subs_cache[path]
     if cached then
         return cached
@@ -164,7 +168,10 @@ function load_sub(path)
     end
 
     subs_cache[path] = result
-    return result
+    return {
+        prefix = prefix,
+        lines = result
+    }
 end
 
 function make_nocase_pattern(s)
@@ -215,15 +222,32 @@ function format_time(time)
     return string.format("%02d"..sep.."%02d"..sep..second_format, h, m, s)
 end
 
-function update_search_results(phrase)
-    local sub = load_sub(get_primary_sub_filename())
-    if sub == nil then
+function get_subs_to_search_in()
+    local result = {}
+
+    local sub = load_sub(get_sub_filename("sub"), "P")
+    if sub then
+        table.insert(result, sub)
+    end
+
+    sub = load_sub(get_sub_filename("sub2"), "S")
+    if sub then
+        table.insert(result, sub)
+    end
+
+    return result
+end
+
+function update_search_results(query)
+    local subs = get_subs_to_search_in()
+    if #subs == 0 then
         mp.osd_message("External subtitles not found")
         return
     end
 
     result_list.list = {
         {
+            sub = nil,
             time = mp.get_property_native("time-pos"),
             ass = "Original position"
         }
@@ -234,24 +258,33 @@ function update_search_results(phrase)
     local closest_lower_time = nil
     local cur_time = mp.get_property_native("time-pos")
 
-    local pat = "(" .. make_nocase_pattern(phrase) .. ")"
-    for _, sub_line in ipairs(sub) do
-        if phrase == "*" or utf8.match(sub_line.text, pat) then
-            local sub_time = adjust_sub_time(sub_line.time)
-            table.insert(result_list.list, {
-                time = sub_time + 0.01, -- to ensure that the subtitle is visible
-                ass = result_list.ass_escape(format_time(sub_time) .. ": ") .. highlight_match(sub_line.text, phrase),
-            })
+    local pat = "(" .. make_nocase_pattern(query) .. ")"
+    for _, sub in ipairs(subs) do
+        for _, sub_line in ipairs(sub.lines) do
+            if query == "*" or utf8.match(sub_line.text, pat) then
+                local sub_time = adjust_sub_time(sub_line.time)
+                local sub_text = result_list.ass_escape(format_time(sub_time) .. ": ") .. highlight_match(sub_line.text, query)
 
-            if sub_time <= cur_time and (closest_lower_time == nil or closest_lower_time < sub_time) then
-                closest_lower_time = sub_time
-                closest_lower_index = #result_list.list
+                if #subs > 1 then
+                    sub_text = "[" .. sub.prefix .. "] " .. sub_text
+                end
+
+                table.insert(result_list.list, {
+                    sub = sub,
+                    time = sub_time + 0.01, -- to ensure that the subtitle is visible
+                    ass = sub_text
+                })
+
+                if sub_time <= cur_time and (closest_lower_time == nil or closest_lower_time < sub_time) then
+                    closest_lower_time = sub_time
+                    closest_lower_index = #result_list.list
+                end
             end
         end
     end
 
     result_list.selected = closest_lower_index
-    result_list.header = "Search results for \"" .. phrase .. "\"\\N ------------------------------------"
+    result_list.header = "Search results for \"" .. query .. "\"\\N ------------------------------------"
 
     result_list:update()
     result_list:open()
