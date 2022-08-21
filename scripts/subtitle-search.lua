@@ -52,7 +52,18 @@ function srt_time_to_seconds(time)
     return hours * 3600 + mins * 60 + secs + minor / 1000
 end
 
-function open_subtitles_file()
+local subs_cache = {}
+
+function open_file(path)
+    local f, err = io.open(path, "r")
+    if f and err == nil then
+        return f
+    end
+
+    return nil
+end
+
+function get_primary_sub_filename()
     local active_track = mp.get_property_native("current-tracks/sub")
     if active_track == nil then
         return nil
@@ -62,26 +73,23 @@ function open_subtitles_file()
     local external_filename = active_track["external-filename"]
 
     if is_external and external_filename then
-        local f, err = io.open(external_filename, "r")
-        if f and err == nil then
-            return f
-        end
+        return external_filename
     end
 
     return nil
 end
 
-function get_lines(inputstr)
+function get_lines(input)
     local lines = {}
 
     local tail = 1
-    for head = 1, #inputstr do
-        local ch = inputstr:sub(head, head)
+    for head = 1, #input do
+        local ch = input:sub(head, head)
         if ch == "\n" then
-            table.insert(lines, inputstr:sub(tail, head - 1))
+            table.insert(lines, input:sub(tail, head - 1))
             tail = head + 1
-        elseif head == #inputstr then
-            table.insert(lines, inputstr:sub(tail, head))
+        elseif head == #input then
+            table.insert(lines, input:sub(tail, head))
         end
     end
 
@@ -92,11 +100,15 @@ function trim(s)
     return (s:gsub("^%s*(.-)%s*$", "%1"))
 end
 
-function load_subtitles_file()
-    local f = open_subtitles_file()
+function load_sub(path)
+    local cached = subs_cache[path]
+    if cached then
+        return cached
+    end
 
+    local f = open_file(path)
     if not f then
-        return false
+        return nil
     end
 
     local data = f:read("*all")
@@ -151,6 +163,7 @@ function load_subtitles_file()
         table.insert(result, cur_line)
     end
 
+    subs_cache[path] = result
     return result
 end
 
@@ -202,15 +215,11 @@ function format_time(time)
     return string.format("%02d"..sep.."%02d"..sep..second_format, h, m, s)
 end
 
-sub_lines = nil
-
 function update_search_results(phrase)
-    if sub_lines == nil then
-        sub_lines = load_subtitles_file()
-        if sub_lines == false then
-            mp.osd_message("Can't find external subtitles")
-            return
-        end
+    local sub = load_sub(get_primary_sub_filename())
+    if sub == nil then
+        mp.osd_message("External subtitles not found")
+        return
     end
 
     result_list.list = {
@@ -226,7 +235,7 @@ function update_search_results(phrase)
     local cur_time = mp.get_property_native("time-pos")
 
     local pat = "(" .. make_nocase_pattern(phrase) .. ")"
-    for _, sub_line in ipairs(sub_lines) do
+    for _, sub_line in ipairs(sub) do
         if phrase == "*" or utf8.match(sub_line.text, pat) then
             local sub_time = adjust_sub_time(sub_line.time)
             table.insert(result_list.list, {
@@ -247,6 +256,8 @@ function update_search_results(phrase)
     result_list:update()
     result_list:open()
 end
+
+input_console.set_enter_handler(update_search_results)
 
 mp.add_key_binding('ctrl+f', 'search-toggle', function()
     if input_console.is_repl_active() then

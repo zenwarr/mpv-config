@@ -366,6 +366,8 @@ function help_command(param)
     log_add('', output)
 end
 
+local enter_handler = nil
+
 -- Run the current command and clear the line (Enter)
 function handle_enter()
     if line == '' then
@@ -376,7 +378,10 @@ function handle_enter()
         history[#history + 1] = line
     end
 
-    update_search_results(line)
+    if enter_handler then
+        enter_handler(line)
+    end
+
     set_active(false)
 
     clear()
@@ -798,5 +803,6 @@ collectgarbage()
 
 return {
     set_active = set_active,
-    is_repl_active = function () return repl_active end
+    is_repl_active = function () return repl_active end,
+    set_enter_handler = function(callback) enter_handler = callback end
 }
