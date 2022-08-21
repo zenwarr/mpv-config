@@ -2929,7 +2929,7 @@ layouts["slimbox"] = function ()
 
 
     local titlerowY = posY - ele_h - 20
-    lo = add_layout("title")
+    lo = add_layout("cache")
     lo.geometry = {x = posX, y = titlerowY, an = 8, w = 496, h = 12}
     lo.style = osc_styles.vidtitle
     lo.button.maxchars = user_opts.boxmaxchars
@@ -2966,7 +2966,7 @@ layouts["slimbox"] = function ()
 
     -- Cache
 
-    lo = add_layout("cache")
+    lo = add_layout("title")
     lo.geometry =
         {x = posX, y = posY + 1,
         an = 8, w = tc_w, h = ele_h}
