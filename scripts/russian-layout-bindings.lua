@@ -70,6 +70,8 @@ key_mapping["M"] = "Ь"
 key_mapping[","] = "б"
 key_mapping["."] = "ю"
 key_mapping["`"] = "ё"
+key_mapping["["] = "х";
+key_mapping["]"] = "ъ";
 
 local bindings = mp.get_property_native("input-bindings")
 

@@ -234,7 +234,7 @@ function update_search_results(phrase)
                 ass = result_list.ass_escape(format_time(sub_time) .. ": ") .. highlight_match(sub_line.text, phrase),
             })
 
-            if sub_line.time <= cur_time and (closest_lower_time == nil or closest_lower_time < sub_time) then
+            if sub_time <= cur_time and (closest_lower_time == nil or closest_lower_time < sub_time) then
                 closest_lower_time = sub_time
                 closest_lower_index = #result_list.list
             end
