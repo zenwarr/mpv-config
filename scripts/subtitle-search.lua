@@ -30,9 +30,18 @@ Console Settings:
 
 package.path = package.path .. ";" .. mp.command_native({"expand-path", "~~/script-modules/?.lua"})
 
+local utils = require("mp.utils")
+local options = require("mp.options")
 local input_console = require("input-console")
 local result_list = require("scroll-list")
 local utf8 = require("utf8/init"):init()
+
+local opts = {
+    search_inactive = false
+}
+
+options.read_options(opts, "subtitle-search")
+
 
 table.insert(result_list.keybinds, {
     "ENTER", "jump_to_result", function()
@@ -167,11 +176,12 @@ function load_sub(path, prefix)
         table.insert(result, cur_line)
     end
 
-    subs_cache[path] = result
-    return {
+    local sub = {
         prefix = prefix,
         lines = result
     }
+    subs_cache[path] = sub
+    return sub
 end
 
 function make_nocase_pattern(s)
@@ -225,14 +235,29 @@ end
 function get_subs_to_search_in()
     local result = {}
 
-    local sub = load_sub(get_sub_filename("sub"), "P")
+    local primary_filename = get_sub_filename("sub")
+    local sub = load_sub(primary_filename, "P")
     if sub then
         table.insert(result, sub)
     end
 
-    sub = load_sub(get_sub_filename("sub2"), "S")
+    local secondary_filename = get_sub_filename("sub2")
+    sub = load_sub(secondary_filename, "S")
     if sub then
         table.insert(result, sub)
+    end
+
+    if opts.search_inactive then
+        local tracks = mp.get_property_native("track-list")
+        for _, track in ipairs(tracks) do
+            local filename = track["external-filename"]
+            if track.type == "sub" and track.external and filename ~= primary_filename and filename ~= secondary_filename then
+                sub = load_sub(track["external-filename"], "A")
+                if sub then
+                    table.insert(result, sub)
+                end
+            end
+        end
     end
 
     return result
