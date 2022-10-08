@@ -30,7 +30,6 @@ Console Settings:
 
 package.path = package.path .. ";" .. mp.command_native({"expand-path", "~~/script-modules/?.lua"})
 
-local utils = require("mp.utils")
 local options = require("mp.options")
 local input_console = require("input-console")
 local result_list = require("scroll-list")
@@ -315,12 +314,11 @@ function update_search_results(query)
     result_list:open()
 end
 
-input_console.set_enter_handler(update_search_results)
-
 mp.add_key_binding('ctrl+f', 'search-toggle', function()
     if input_console.is_repl_active() then
         input_console.set_active(false)
     else
+        input_console.set_enter_handler(update_search_results)
         input_console.set_active(true)
     end
 end)
