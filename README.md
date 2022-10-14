@@ -112,6 +112,7 @@ Changes:
 - Embedded console replaced with more recent variant from mpv sources (to support unicode input)
 - Takes into account current `sub-delay` value
 - Can use special phrase "*" to show all subtitles
+- Use `ctrl+shift+f` shortcut to show all subtitle lines simultaneously and dynamically highlight the current line
 
 Requires `script-modules/utf8` repository, `script-modules/scroll-list.lua` and `script-modules/input-console.lua` to work.
 

@@ -262,7 +262,7 @@ function get_subs_to_search_in()
     return result
 end
 
-function update_search_results(query)
+function update_search_results(query, live)
     local subs = get_subs_to_search_in()
     if #subs == 0 then
         mp.osd_message("External subtitles not found")
@@ -277,6 +277,7 @@ function update_search_results(query)
         }
     }
     result_list.selected = 1
+    result_list.live = live
 
     local closest_lower_index = 1
     local closest_lower_time = nil
@@ -318,7 +319,35 @@ mp.add_key_binding('ctrl+f', 'search-toggle', function()
     if input_console.is_repl_active() then
         input_console.set_active(false)
     else
-        input_console.set_enter_handler(update_search_results)
+        input_console.set_enter_handler(function(query)
+            update_search_results(query, false)
+        end)
         input_console.set_active(true)
+    end
+end)
+
+mp.add_key_binding("ctrl+shift+f", 'sub-list-toggle', function()
+    update_search_results("*", true)
+end)
+
+local function get_current_subtitle_index(list, pos)
+    local closest_lower_index = 1
+    local closest_lower_time = nil
+    for i, item in ipairs(list) do
+        if item.time <= pos and (closest_lower_time == nil or closest_lower_time < item.time) then
+            closest_lower_time = item.time
+            closest_lower_index = i
+        end
+    end
+    return closest_lower_index
+end
+
+mp.observe_property("time-pos", "native", function(_, pos)
+    if not result_list.hidden and result_list.live and pos ~= nil then
+        local index = get_current_subtitle_index(result_list.list, pos)
+        if index > 1 then
+            result_list.selected = index
+            result_list:update()
+        end
     end
 end)
