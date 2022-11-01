@@ -112,9 +112,10 @@ Changes:
 - Embedded console replaced with more recent variant from mpv sources (to support unicode input)
 - Takes into account current `sub-delay` value
 - Can use special phrase "*" to show all subtitles
+- Can search in embedded subtitles (requires ffmpeg to be installed to extract subtitles from video files)
 - Use `ctrl+shift+f` shortcut to show all subtitle lines simultaneously and dynamically highlight the current line
 
-Requires `script-modules/utf8` repository, `script-modules/scroll-list.lua` and `script-modules/input-console.lua` to work.
+Requires `script-modules/utf8` repository, `script-modules/scroll-list.lua`, `script-modules/sha1.lua` and `script-modules/input-console.lua` to work.
 
 You can clone `script-modules/utf8` repository with the following command (assuming you are in mpv config directory): `git clone git@github.com:Stepets/utf8.lua.git script-modules/utf8`
 

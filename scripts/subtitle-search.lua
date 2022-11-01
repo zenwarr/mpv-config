@@ -8,9 +8,11 @@ Differences from the original script:
 - Supports searching unicode text (subtitles should be encoded as utf8, please re-encode your subtitles if you get no results searching for unicode text)
 - Embedded console replaced with more recent variant from mpv sources (to support unicode input)
 - Takes into account current `sub-delay` value
+- Can search in embedded subtitles (requires ffmpeg to be installed to extract subtitles from video files)
 - Can use special phrase "*" to show all subtitles
+- Use `ctrl+shift+f` shortcut to show all subtitle lines simultaneously and dynamically highlight the current line
 
-Requires `script-modules/utf8` repository, `script-modules/scroll-list.lua` and `script-modules/input-console.lua` to work.
+Requires `script-modules/utf8` repository, `script-modules/scroll-list.lua`, `script-modules/sha1.lua` and `script-modules/input-console.lua` to work.
 
 You can clone `script-modules/utf8` repository with the following command (assuming you are in mpv config directory): `git clone git@github.com:Stepets/utf8.lua.git script-modules/utf8`
 
@@ -28,18 +30,16 @@ Console Settings:
     For example, scale or font-size.
 --]]
 
+
 package.path = package.path .. ";" .. mp.command_native({"expand-path", "~~/script-modules/?.lua"})
 
-local options = require("mp.options")
+local mp = require("mp")
+local utils = require("mp.utils")
+local msg = require("mp.msg")
 local input_console = require("input-console")
 local result_list = require("scroll-list")
 local utf8 = require("utf8/init"):init()
-
-local opts = {
-    search_inactive = false
-}
-
-options.read_options(opts, "subtitle-search")
+local sha1 = require("sha1")
 
 
 table.insert(result_list.keybinds, {
@@ -71,20 +71,95 @@ function open_file(path)
     return nil
 end
 
-function get_sub_filename(track_name)
+function get_sub_filename_async(track_name, on_done)
     local active_track = mp.get_property_native("current-tracks/" .. track_name)
     if active_track == nil then
-        return nil
+        on_done(nil)
+        return
     end
 
     local is_external = active_track.external
     local external_filename = active_track["external-filename"]
 
     if is_external and external_filename then
-        return external_filename
+        on_done(external_filename)
+        return
     end
 
-    return nil
+    if is_external == false then
+        extract_subtitle_track_async(active_track, on_done)
+        return
+    end
+
+    on_done(nil)
+end
+
+function extract_subtitle_track_async(track, on_done)
+    if track.external then
+        on_done(nil)
+        return
+    end
+
+    local video_file = mp.get_property_native("path")
+    local working_dir = mp.get_property_native("working-directory")
+    local full_path = utils.join_path(working_dir, video_file)
+
+    local track_index = track["ff-index"]
+
+    local sub_filename = sha1.hex(full_path .. "#" .. track_index)
+    local sub_path = utils.join_path(get_temp_dir(), "mpv-subtitle-search-extracted-" .. sub_filename .. ".srt")
+
+    -- check if file already exists
+    if open_file(sub_path) then
+        msg.info("Reusing extracted subtitle track from " .. sub_path)
+
+        on_done(sub_path)
+        return
+    end
+
+    msg.info("Extracting embedded subtitle track to " .. sub_path)
+
+    local extract_overlay = mp.create_osd_overlay("ass-events")
+    extract_overlay.data = "{\\a3\\fs20}Extracting embedded subtitles, wait..."
+    extract_overlay:update()
+
+    mp.command_native_async({
+        name = "subprocess",
+        capture_stdout = true,
+        args = { "ffmpeg", "-y", "-hide_banner", "-loglevel", "error", "-i", full_path, "-map", "0:" .. track_index, "-vn", "-an", "-c:s", "srt", sub_path }
+    }, function(ok)
+        if not ok then
+            extract_overlay.data = "{\\a3\\fs20\\c&HFF&}Extraction failed"
+            extract_overlay:update()
+
+            mp.add_timeout(2, function()
+                extract_overlay:remove()
+            end)
+
+            on_done(nil)
+        else
+            extract_overlay:remove()
+
+            on_done(sub_path)
+        end
+    end)
+end
+
+function get_temp_dir()
+    local temp_dir = os.getenv("TMPDIR")
+    if temp_dir == nil then
+        temp_dir = os.getenv("TEMP")
+    end
+
+    if temp_dir == nil then
+        temp_dir = os.getenv("TMP")
+    end
+
+    if temp_dir == nil then
+        temp_dir = "/tmp"
+    end
+
+    return temp_dir
 end
 
 function get_lines(input)
@@ -231,88 +306,79 @@ function format_time(time)
     return string.format("%02d"..sep.."%02d"..sep..second_format, h, m, s)
 end
 
-function get_subs_to_search_in()
+function get_subs_to_search_in_async(on_done)
     local result = {}
 
-    local primary_filename = get_sub_filename("sub")
-    local sub = load_sub(primary_filename, "P")
-    if sub then
-        table.insert(result, sub)
-    end
-
-    local secondary_filename = get_sub_filename("sub2")
-    sub = load_sub(secondary_filename, "S")
-    if sub then
-        table.insert(result, sub)
-    end
-
-    if opts.search_inactive then
-        local tracks = mp.get_property_native("track-list")
-        for _, track in ipairs(tracks) do
-            local filename = track["external-filename"]
-            if track.type == "sub" and track.external and filename ~= primary_filename and filename ~= secondary_filename then
-                sub = load_sub(track["external-filename"], "A")
-                if sub then
-                    table.insert(result, sub)
-                end
-            end
+    get_sub_filename_async("sub", function(primary_filename)
+        local sub = load_sub(primary_filename, "P")
+        if sub then
+            table.insert(result, sub)
         end
-    end
 
-    return result
+        get_sub_filename_async("sub2", function(secondary_filename)
+            sub = load_sub(secondary_filename, "S")
+            if sub then
+                table.insert(result, sub)
+            end
+
+            on_done(result)
+        end)
+    end)
 end
 
-function update_search_results(query, live)
-    local subs = get_subs_to_search_in()
-    if #subs == 0 then
-        mp.osd_message("External subtitles not found")
-        return
-    end
+function update_search_results_async(query, live)
+    get_subs_to_search_in_async(function(subs)
+        if #subs == 0 then
+            mp.osd_message("External subtitles not found")
+            return
+        end
 
-    result_list.list = {
-        {
-            sub = nil,
-            time = mp.get_property_native("time-pos"),
-            ass = "Original position"
+        result_list.list = {
+            {
+                sub = nil,
+                time = mp.get_property_native("time-pos"),
+                ass = "Original position"
+            }
         }
-    }
-    result_list.selected = 1
-    result_list.live = live
+        result_list.selected = 1
+        result_list.live = live
 
-    local closest_lower_index = 1
-    local closest_lower_time = nil
-    local cur_time = mp.get_property_native("time-pos")
+        local closest_lower_index = 1
+        local closest_lower_time = nil
+        local cur_time = mp.get_property_native("time-pos")
 
-    local pat = "(" .. make_nocase_pattern(query) .. ")"
-    for _, sub in ipairs(subs) do
-        for _, sub_line in ipairs(sub.lines) do
-            if query == "*" or utf8.match(sub_line.text, pat) then
-                local sub_time = adjust_sub_time(sub_line.time)
-                local sub_text = result_list.ass_escape(format_time(sub_time) .. ": ") .. highlight_match(sub_line.text, query)
+        local pat = "(" .. make_nocase_pattern(query) .. ")"
+        for _, sub in ipairs(subs) do
+            for _, sub_line in ipairs(sub.lines) do
+                if query == "*" or utf8.match(sub_line.text, pat) then
+                    local sub_time = adjust_sub_time(sub_line.time)
+                    local sub_text = result_list.ass_escape(format_time(sub_time) .. ": ") ..
+                        highlight_match(sub_line.text, query)
 
-                if #subs > 1 then
-                    sub_text = "[" .. sub.prefix .. "] " .. sub_text
-                end
+                    if #subs > 1 then
+                        sub_text = "[" .. sub.prefix .. "] " .. sub_text
+                    end
 
-                table.insert(result_list.list, {
-                    sub = sub,
-                    time = sub_time + 0.01, -- to ensure that the subtitle is visible
-                    ass = sub_text
-                })
+                    table.insert(result_list.list, {
+                        sub = sub,
+                        time = sub_time + 0.01, -- to ensure that the subtitle is visible
+                        ass = sub_text
+                    })
 
-                if sub_time <= cur_time and (closest_lower_time == nil or closest_lower_time < sub_time) then
-                    closest_lower_time = sub_time
-                    closest_lower_index = #result_list.list
+                    if sub_time <= cur_time and (closest_lower_time == nil or closest_lower_time < sub_time) then
+                        closest_lower_time = sub_time
+                        closest_lower_index = #result_list.list
+                    end
                 end
             end
         end
-    end
 
-    result_list.selected = closest_lower_index
-    result_list.header = "Search results for \"" .. query .. "\"\\N ------------------------------------"
+        result_list.selected = closest_lower_index
+        result_list.header = "Search results for \"" .. query .. "\"\\N ------------------------------------"
 
-    result_list:update()
-    result_list:open()
+        result_list:update()
+        result_list:open()
+    end)
 end
 
 mp.add_key_binding('ctrl+f', 'search-toggle', function()
@@ -320,14 +386,14 @@ mp.add_key_binding('ctrl+f', 'search-toggle', function()
         input_console.set_active(false)
     else
         input_console.set_enter_handler(function(query)
-            update_search_results(query, false)
+            update_search_results_async(query, false)
         end)
         input_console.set_active(true)
     end
 end)
 
 mp.add_key_binding("ctrl+shift+f", 'sub-list-toggle', function()
-    update_search_results("*", true)
+    update_search_results_async("*", true)
 end)
 
 local function get_current_subtitle_index(list, pos)
