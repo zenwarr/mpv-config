@@ -1576,8 +1576,8 @@ local osc_styles = {
     topButtons = "{\\blur0\\bord0\\1c&HFFFFFF\\3c&HFFFFFF\\fs12\\fnmpv-osd-symbols}",
 
     elementDown = "{\\1c&H999999}",
-    timecodes = "{\\blur0\\bord0\\1c&HFFFFFF\\3c&HFFFFFF\\fs20}",
-    vidtitle = "{\\blur0\\bord0\\1c&HFFFFFF\\3c&HFFFFFF\\fs12\\q2}",
+    timecodes = "{\\blur0\\bord0\\1c&HFFFFFF\\3c&HFFFFFF\\fs12}",
+    vidtitle = "{\\blur0\\bord0\\1c&HFFFFFF\\3c&HFFFFFF\\fs18\\q2}",
     box = "{\\rDefault\\blur0\\bord1\\1c&H000000\\3c&HFFFFFF}",
 
     topButtonsBar = "{\\blur0\\bord0\\1c&HFFFFFF\\3c&HFFFFFF\\fs18\\fnmpv-osd-symbols}",
@@ -2928,8 +2928,8 @@ layouts["slimbox"] = function ()
     end
 
 
-    local titlerowY = posY - ele_h - 20
-    lo = add_layout("cache")
+    local titlerowY = posY - ele_h - 22
+    lo = add_layout("title")
     lo.geometry = {x = posX, y = titlerowY, an = 8, w = 496, h = 12}
     lo.style = osc_styles.vidtitle
     lo.button.maxchars = user_opts.boxmaxchars
@@ -2966,7 +2966,7 @@ layouts["slimbox"] = function ()
 
     -- Cache
 
-    lo = add_layout("title")
+    lo = add_layout("cache")
     lo.geometry =
         {x = posX, y = posY + 1,
         an = 8, w = tc_w, h = ele_h}
