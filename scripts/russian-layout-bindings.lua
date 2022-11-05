@@ -73,8 +73,6 @@ key_mapping["`"] = "ё"
 key_mapping["["] = "х";
 key_mapping["]"] = "ъ";
 
-local bindings = mp.get_property_native("input-bindings")
-
 local function split(inputstr, sep)
     local result = {}
     for str in string.gmatch(inputstr, "([^" .. sep .. "]+)") do
@@ -94,27 +92,32 @@ function guess_repeatable_command(cmd)
 end
 
 
--- iterate over all bindings and add translated bindings
-for _, binding in ipairs(bindings) do
-    parts = split(binding.key, "+")
-    translated = {}
-    needs_translate = false
+-- we do not have a way to order plugin loading, so we have to wait until mpv loads other plugins and then do our job
+mp.add_timeout(0.5, function()
+    local bindings = mp.get_property_native("input-bindings")
 
-    for _, binding_part in ipairs(parts) do
-        if key_mapping[binding_part] ~= nil then
-            table.insert(parts, key_mapping[binding_part])
-            needs_translate = true
-        else
-            table.insert(translated, binding_part)
+    for _, binding in ipairs(bindings) do
+        print(binding.key)
+        parts = split(binding.key, "+")
+        translated = {}
+        needs_translate = false
+
+        for _, binding_part in ipairs(parts) do
+            if key_mapping[binding_part] ~= nil then
+                table.insert(parts, key_mapping[binding_part])
+                needs_translate = true
+            else
+                table.insert(translated, binding_part)
+            end
+        end
+
+        if needs_translate then
+            translated_key = table.concat(translated, "+")
+            mp.add_key_binding(translated_key, function()
+                mp.command(binding.cmd)
+            end, {
+                repeatable = guess_repeatable_command(binding.cmd)
+            })
         end
     end
-
-    if needs_translate then
-        translated_key = table.concat(translated, "+")
-        mp.add_key_binding(translated_key, function()
-            mp.command(binding.cmd)
-        end, {
-            repeatable = guess_repeatable_command(binding.cmd)
-        })
-    end
-end
+end)
