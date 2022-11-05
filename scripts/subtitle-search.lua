@@ -12,7 +12,7 @@ Differences from the original script:
 - Can use special phrase "*" to show all subtitles
 - Use `ctrl+shift+f` shortcut to show all subtitle lines simultaneously and dynamically highlight the current line
 
-Requires `script-modules/utf8` repository, `script-modules/scroll-list.lua`, `script-modules/sha1.lua` and `script-modules/input-console.lua` to work.
+Requires `script-modules/utf8` repository, `script-modules/scroll-list.lua`, `script-modules/sha1.lua`, `script-modules/utf8_data.lua` and `script-modules/input-console.lua` to work.
 
 You can clone `script-modules/utf8` repository with the following command (assuming you are in mpv config directory): `git clone git@github.com:Stepets/utf8.lua.git script-modules/utf8`
 
@@ -38,8 +38,18 @@ local utils = require("mp.utils")
 local msg = require("mp.msg")
 local input_console = require("input-console")
 local result_list = require("scroll-list")
-local utf8 = require("utf8/init"):init()
+local utf8 = require("utf8/init")
+local utf8_data = require("utf8_data")
 local sha1 = require("sha1")
+
+utf8.config = {
+    conversion = {
+        uc_lc = utf8_data.utf8_uc_lc,
+        lc_uc = utf8_data.utf8_lc_uc
+    },
+}
+
+utf8:init()
 
 
 table.insert(result_list.keybinds, {
