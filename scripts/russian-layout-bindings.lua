@@ -97,7 +97,6 @@ mp.add_timeout(0.5, function()
     local bindings = mp.get_property_native("input-bindings")
 
     for _, binding in ipairs(bindings) do
-        print(binding.key)
         parts = split(binding.key, "+")
         translated = {}
         needs_translate = false
