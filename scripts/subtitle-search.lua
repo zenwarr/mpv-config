@@ -64,8 +64,12 @@ table.insert(result_list.keybinds, {
     end, {}
 })
 
-function srt_time_to_seconds(time)
-    local major, minor = time:match("(%d%d:%d%d:%d%d),(%d%d%d)")
+function srt_time_to_seconds(time, sep)
+    if time:match("%d%d:%d%d" .. sep .. "%d%d%d") then
+        time = "00:" .. time
+    end
+
+    local major, minor = time:match("(%d%d:%d%d:%d%d)" .. sep .. "(%d%d%d)")
     local hours, mins, secs = major:match("(%d%d):(%d%d):(%d%d)")
     return hours * 3600 + mins * 60 + secs + minor / 1000
 end
@@ -193,6 +197,110 @@ function trim(s)
     return (s:gsub("^%s*(.-)%s*$", "%1"))
 end
 
+function parse_vtt_sub(data)
+    local result = {}
+    local state = "header"
+
+    local cur_line = {}
+    for _, line in ipairs(get_lines(data)) do
+        if state == "header" then
+            if line == "" then
+                state = "body"
+            end
+        elseif state == "body" then
+            if line == "" then
+                state = "header"
+            elseif line:match("^NOTE") or line:match("^STYLE") then
+                state = "comment"
+            else
+                local time_text = line:match("^(%d%d:%d%d:%d%d%.%d%d%d)") or line:match("^(%d%d:%d%d%.%d%d%d)")
+                if time_text then
+                    cur_line.time = srt_time_to_seconds(time_text, ".")
+                    state = "waiting_text"
+                else
+                    state = "body"
+                end
+            end
+        elseif state == "comment" then
+            if #line == 0 then
+                state = "body"
+            end
+        elseif state == "waiting_text" then
+            if #line == 0 then
+                table.insert(result, cur_line)
+                print("line", cur_line.time, cur_line.text)
+                cur_line = {}
+                state = "body"
+            else
+                if cur_line.text then
+                    cur_line.text = cur_line.text .. "\n" .. line
+                else
+                    cur_line.text = line
+                end
+            end
+        end
+    end
+
+    return result
+end
+
+function parse_sub(data)
+    data = string.gsub(data, "\r\n", "\n")
+    data = string.gsub(data, "<b>", "")
+    data = string.gsub(data, "</b>", "")
+    data = string.gsub(data, "<i>", "")
+    data = string.gsub(data, "</i>", "")
+    data = string.gsub(data, "<u>", "")
+    data = string.gsub(data, "</u>", "")
+
+    if data:sub(1, 6) == "WEBVTT" then
+        return parse_vtt_sub(data)
+    end
+
+    local result = {}
+    local state = "waiting_index"
+    local cur_line = {}
+    for _, line in ipairs(get_lines(data)) do
+        line = trim(line)
+        if state == "waiting_index" then
+            if cur_line.text then
+                table.insert(result, cur_line)
+                cur_line = {}
+            end
+
+            if line:match("^%d+$") then
+                state = "waiting_time"
+            end
+        elseif state == "waiting_time" then
+            local time_text = line:match("^(%d%d:%d%d:%d%d,%d%d%d) ")
+            if time_text then
+                cur_line.time = srt_time_to_seconds(time_text, ",")
+                state = "waiting_text"
+            else
+                state = "waiting_index"
+            end
+        elseif state == "waiting_text" then
+            if #line == 0 then
+                if cur_line.text then
+                    table.insert(result, cur_line)
+                end
+                cur_line = {}
+                state = "waiting_index"
+            elseif cur_line.text then
+                cur_line.text = cur_line.text .. " " .. line
+            else
+                cur_line.text = line
+            end
+        end
+    end
+
+    if cur_line.text then
+        table.insert(result, cur_line)
+    end
+
+    return result
+end
+
 function load_sub(path, prefix)
     if not path then
         return nil
@@ -219,50 +327,9 @@ function load_sub(path, prefix)
     data = string.gsub(data, "<u>", "")
     data = string.gsub(data, "</u>", "")
 
-    local result = {}
-    local state = "waiting_index"
-    local cur_line = {}
-    for _, line in ipairs(get_lines(data)) do
-        line = trim(line)
-        if state == "waiting_index" then
-            if cur_line.text then
-                table.insert(result, cur_line)
-                cur_line = {}
-            end
-
-            if line:match("^%d+$") then
-                state = "waiting_time"
-            end
-        elseif state == "waiting_time" then
-            local time_text = line:match("^(%d%d:%d%d:%d%d,%d%d%d) ")
-            if time_text then
-                cur_line.time = srt_time_to_seconds(time_text)
-                state = "waiting_text"
-            else
-                state = "waiting_index"
-            end
-        elseif state == "waiting_text" then
-            if #line == 0 then
-                if cur_line.text then
-                    table.insert(result, cur_line)
-                end
-                cur_line = {}
-                state = "waiting_index"
-            elseif cur_line.text then
-                cur_line.text = cur_line.text .. " " .. line
-            else
-                cur_line.text = line
-            end
-        end
-    end
-
-    if cur_line.text then
-        table.insert(result, cur_line)
-    end
-
     local sub = {
         prefix = prefix,
-        lines = result
+        lines = parse_sub(data)
     }
     subs_cache[path] = sub
     return sub
