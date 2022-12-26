@@ -33,7 +33,7 @@ Console Settings:
 --]]
 
 
-package.path = package.path .. ";" .. mp.command_native({"expand-path", "~~/script-modules/?.lua"})
+package.path = package.path .. ";" .. mp.command_native({ "expand-path", "~~/script-modules/?.lua" })
 
 local mp = require("mp")
 local utils = require("mp.utils")
@@ -52,7 +52,6 @@ utf8.config = {
 }
 
 utf8:init()
-
 
 table.insert(result_list.keybinds, {
     "ENTER", "jump_to_result", function()
@@ -231,7 +230,7 @@ function parse_vtt_sub(data)
         elseif state == "waiting_text" then
             if #line == 0 or line == nil then
                 if cur_line.text ~= nil then
-                   table.insert(result, cur_line)
+                    table.insert(result, cur_line)
                 end
 
                 cur_line = {}
@@ -402,12 +401,12 @@ function format_time(time)
     decimals = 3
     sep = "."
     local s = time
-    local h, s = divmod(s, 60*60)
+    local h, s = divmod(s, 60 * 60)
     local m, s = divmod(s, 60)
 
-    local second_format = string.format("%%0%d.%df", 2+(decimals > 0 and decimals+1 or 0), decimals)
+    local second_format = string.format("%%0%d.%df", 2 + (decimals > 0 and decimals + 1 or 0), decimals)
 
-    return string.format("%02d"..sep.."%02d"..sep..second_format, h, m, s)
+    return string.format("%02d" .. sep .. "%02d" .. sep .. second_format, h, m, s)
 end
 
 function get_subs_to_search_in_async(on_done)
@@ -457,7 +456,7 @@ function update_search_results_async(query, live)
                 if query == "*" or utf8.match(sub_line.text, pat) then
                     local sub_time = adjust_sub_time(sub_line.time)
                     local sub_text = result_list.ass_escape(format_time(sub_time) .. ": ") ..
-                        highlight_match(sub_line.text, query)
+                            highlight_match(sub_line.text, query)
 
                     if #subs > 1 then
                         sub_text = "[" .. sub.prefix .. "] " .. sub_text
