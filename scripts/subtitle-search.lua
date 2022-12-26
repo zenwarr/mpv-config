@@ -64,7 +64,7 @@ table.insert(result_list.keybinds, {
     end, {}
 })
 
-function srt_time_to_seconds(time, sep)
+function sub_time_to_seconds(time, sep)
     if time:match("%d%d:%d%d" .. sep .. "%d%d%d") then
         time = "00:" .. time
     end
@@ -194,7 +194,7 @@ function get_lines(input)
 end
 
 function trim(s)
-    return (s:gsub("^%s*(.-)%s*$", "%1"))
+    return s:gsub("^%s*(.-)%s*$", "%1")
 end
 
 function parse_vtt_sub(data)
@@ -203,6 +203,7 @@ function parse_vtt_sub(data)
 
     local cur_line = {}
     for _, line in ipairs(get_lines(data)) do
+        line = trim(line)
         if state == "header" then
             if line == "" then
                 state = "body"
@@ -215,7 +216,7 @@ function parse_vtt_sub(data)
             else
                 local time_text = line:match("^(%d%d:%d%d:%d%d%.%d%d%d)") or line:match("^(%d%d:%d%d%.%d%d%d)")
                 if time_text then
-                    cur_line.time = srt_time_to_seconds(time_text, ".")
+                    cur_line.time = sub_time_to_seconds(time_text, ".")
                     state = "waiting_text"
                 else
                     state = "body"
@@ -226,12 +227,15 @@ function parse_vtt_sub(data)
                 state = "body"
             end
         elseif state == "waiting_text" then
-            if #line == 0 then
-                table.insert(result, cur_line)
-                print("line", cur_line.time, cur_line.text)
+            if #line == 0 or line == nil then
+                if cur_line.text ~= nil then
+                   table.insert(result, cur_line)
+                end
+
                 cur_line = {}
                 state = "body"
             else
+                line = remove_tags(line)
                 if cur_line.text then
                     cur_line.text = cur_line.text .. "\n" .. line
                 else
@@ -244,14 +248,34 @@ function parse_vtt_sub(data)
     return result
 end
 
+function remove_tags(text)
+    function remove_tag(tag_to_remove)
+        return string.gsub(text, "</?" .. tag_to_remove .. ">", "")
+    end
+
+    text = remove_tag("b")
+    text = remove_tag("i")
+    text = remove_tag("u")
+    text = remove_tag("ruby")
+    text = remove_tag("rt")
+
+    -- remove class tag
+    text = remove_tag("c")
+    text = string.gsub(text, "<c.[^>]*>", "")
+
+    -- remove voice tag
+    text = remove_tag("v")
+    text = string.gsub(text, "<v [^>]*>", "")
+
+    -- remove karaoke karaoke tags
+    text = string.gsub(text, "</?%d%d:%d%d.%d%d%d>", "")
+    text = string.gsub(text, "</?%d%d:%d%d:%d%d.%d%d%d>", "")
+
+    return text
+end
+
 function parse_sub(data)
     data = string.gsub(data, "\r\n", "\n")
-    data = string.gsub(data, "<b>", "")
-    data = string.gsub(data, "</b>", "")
-    data = string.gsub(data, "<i>", "")
-    data = string.gsub(data, "</i>", "")
-    data = string.gsub(data, "<u>", "")
-    data = string.gsub(data, "</u>", "")
 
     if data:sub(1, 6) == "WEBVTT" then
         return parse_vtt_sub(data)
@@ -274,12 +298,13 @@ function parse_sub(data)
         elseif state == "waiting_time" then
             local time_text = line:match("^(%d%d:%d%d:%d%d,%d%d%d) ")
             if time_text then
-                cur_line.time = srt_time_to_seconds(time_text, ",")
+                cur_line.time = sub_time_to_seconds(time_text, ",")
                 state = "waiting_text"
             else
                 state = "waiting_index"
             end
         elseif state == "waiting_text" then
+            line = remove_tags(line)
             if #line == 0 then
                 if cur_line.text then
                     table.insert(result, cur_line)
@@ -318,14 +343,6 @@ function load_sub(path, prefix)
 
     local data = f:read("*all")
     f:close()
-
-    data = string.gsub(data, "\r\n", "\n")
-    data = string.gsub(data, "<b>", "")
-    data = string.gsub(data, "</b>", "")
-    data = string.gsub(data, "<i>", "")
-    data = string.gsub(data, "</i>", "")
-    data = string.gsub(data, "<u>", "")
-    data = string.gsub(data, "</u>", "")
 
     local sub = {
         prefix = prefix,
