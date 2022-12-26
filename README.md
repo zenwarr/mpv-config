@@ -111,8 +111,10 @@ Changes:
 - Supports searching unicode text (subtitles should be encoded as utf8, please re-encode your subtitles if you get no results searching for unicode text)
 - Embedded console replaced with more recent variant from mpv sources (to support unicode input)
 - Takes into account current `sub-delay` value
-- Can use special phrase "*" to show all subtitles
+- Can use special phrase "*" to show all subtitle lines
 - Can search in embedded subtitles (requires ffmpeg to be installed to extract subtitles from video files)
+- Can search subtitles for youtube videos (requires ffmpeg to be installed to fetch remote subtitles)
+- Supports `.srt` and `.vtt` subtitle formats
 - Use `ctrl+shift+f` shortcut to show all subtitle lines simultaneously and dynamically highlight the current line
 
 Requires `script-modules/utf8` repository, `script-modules/scroll-list.lua`, `script-modules/sha1.lua`, `script-modules/utf8_data.lua` and `script-modules/input-console.lua` to work.
