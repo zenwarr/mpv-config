@@ -23,13 +23,6 @@ Usage:
 Example:
     'You are playing Empire Strikes Back and press Ctrl+F, type "I am you father" + Enter
     and voilá, the scene pops up.'
-Additional Keybidings:
-    Ctrl+F - open or close search console
-More Information:
-    The search is case insensitive and depends on the external .srt subtitles.
-Console Settings:
-    Update repl.lua default options below to increase the default font size.
-    For example, scale or font-size.
 --]]
 
 
