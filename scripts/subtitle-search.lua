@@ -89,6 +89,12 @@ function get_sub_filename_async(track_name, on_done)
     local is_external = active_track.external
     local external_filename = active_track["external-filename"]
 
+    -- youtube subtitles specified with edl format
+    if is_external and external_filename and external_filename:sub(1, 6) == "edl://" then
+        download_subtitle_async(external_filename:match("https://.*"), on_done)
+        return
+    end
+
     if is_external and external_filename then
         on_done(external_filename)
         return
@@ -102,6 +108,40 @@ function get_sub_filename_async(track_name, on_done)
     on_done(nil)
 end
 
+function get_path_to_extract_sub(uniq_sub_id)
+    local sub_filename = sha1.hex(uniq_sub_id)
+    return utils.join_path(get_temp_dir(), "mpv-subtitle-search-extracted-" .. sub_filename .. ".srt")
+end
+
+function download_subtitle_async(url, on_done)
+    local sub_path = get_path_to_extract_sub(mp.get_property_native("path") .. "#" .. url)
+
+    local extract_overlay = mp.create_osd_overlay("ass-events")
+    extract_overlay.data = "{\\a3\\fs20}Fetching remote subtitles, wait..."
+    extract_overlay:update()
+
+    mp.command_native_async({
+        name = "subprocess",
+        capture_stdout = true,
+        args = { "ffmpeg", "-y", "-hide_banner", "-loglevel", "error", "-i", url, "-vn", "-an", "-c:s", "srt", sub_path }
+    }, function(ok)
+        if not ok then
+            extract_overlay.data = "{\\a3\\fs20\\c&HFF&}Extraction failed"
+            extract_overlay:update()
+
+            mp.add_timeout(2, function()
+                extract_overlay:remove()
+            end)
+
+            on_done(nil)
+        else
+            extract_overlay:remove()
+
+            on_done(sub_path)
+        end
+    end)
+end
+
 function extract_subtitle_track_async(track, on_done)
     if track.external then
         on_done(nil)
@@ -113,9 +153,7 @@ function extract_subtitle_track_async(track, on_done)
     local full_path = utils.join_path(working_dir, video_file)
 
     local track_index = track["ff-index"]
-
-    local sub_filename = sha1.hex(full_path .. "#" .. track_index)
-    local sub_path = utils.join_path(get_temp_dir(), "mpv-subtitle-search-extracted-" .. sub_filename .. ".srt")
+    local sub_path = get_path_to_extract_sub(full_path .. "#" .. track_index)
 
     -- check if file already exists
     if open_file(sub_path) then
@@ -337,14 +375,6 @@ function load_sub(path, prefix)
 
     local data = f:read("*all")
     f:close()
-
-    data = string.gsub(data, "\r\n", "\n")
-    data = string.gsub(data, "<b>", "")
-    data = string.gsub(data, "</b>", "")
-    data = string.gsub(data, "<i>", "")
-    data = string.gsub(data, "</i>", "")
-    data = string.gsub(data, "<u>", "")
-    data = string.gsub(data, "</u>", "")
 
     local sub = {
         prefix = prefix,
