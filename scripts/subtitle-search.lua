@@ -306,7 +306,50 @@ function remove_tags(text)
     return text
 end
 
+
+-- detects only most common encodings
+function get_encoding_from_bom(data)
+    -- utf8
+    local bom = data:sub(1, 3)
+    if bom == "\xEF\xBB\xBF" then
+        return "utf-8"
+    end
+
+    -- utf16
+    bom = data:sub(1, 2)
+    if bom == "\xFF\xFE" or bom == "\xFE\xFF" then
+        return "utf-16"
+    end
+
+    -- utf32
+    bom = data:sub(1, 4)
+    if bom == "\xFF\xFE\x00\x00" or bom == "\x00\x00\xFE\xFF" then
+        return "utf-32"
+    end
+
+    return nil
+end
+
 function parse_sub(data)
+    bom_encoding = get_encoding_from_bom(data)
+    if bom_encoding ~= nil then
+        if bom_encoding == "utf-8" then
+            data = data:sub(3)
+        else
+            local error_overlay = mp.create_osd_overlay("ass-events")
+            error_overlay.data = "{\\a3\\fs20\\c&HFF&}Unsupported subtitle encoding: " .. bom_encoding .. ", please re-encode subtitle file to utf-8 to search"
+            error_overlay:update()
+
+            msg.error("Unsupported subtitle encoding: " .. bom_encoding .. ", please re-encode subtitle file to utf-8 to search")
+
+            mp.add_timeout(10, function()
+                error_overlay:remove()
+            end)
+
+            return {}
+        end
+    end
+
     data = string.gsub(data, "\r\n", "\n")
 
     if data:sub(1, 6) == "WEBVTT" then
