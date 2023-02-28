@@ -116,6 +116,11 @@ end
 function download_subtitle_async(url, on_done)
     local sub_path = get_path_to_extract_sub(mp.get_property_native("path") .. "#" .. url)
 
+    if subs_cache[sub_path] then
+        on_done(sub_path)
+        return
+    end
+
     local extract_overlay = mp.create_osd_overlay("ass-events")
     extract_overlay.data = "{\\a3\\fs20}Fetching remote subtitles, wait..."
     extract_overlay:update()
