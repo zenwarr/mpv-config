@@ -103,8 +103,16 @@ local function getVideoTrackTitle(trackId)
     local trackTitle = propNative("track-list/" .. trackId .. "/title")
     local trackCodec = propNative("track-list/" .. trackId .. "/codec"):upper()
     local trackImage = propNative("track-list/" .. trackId .. "/image")
-    local trackwh = propNative("track-list/" .. trackId .. "/demux-w") .. "x" .. propNative("track-list/" .. trackId .. "/demux-h")
-    local trackFps = string.format("%.3f", propNative("track-list/" .. trackId .. "/demux-fps"))
+
+    local trackwh = (propNative("track-list/" .. trackId .. "/demux-w") or "?") .. "x" .. (propNative("track-list/" .. trackId .. "/demux-h") or "?")
+    local fps = propNative("track-list/" .. trackId .. "/demux-fps")
+    local trackFps
+    if fps then
+        trackFps = string.format("%.3f", fps)
+    else
+        trackFps = "?"
+    end
+
     local trackDefault = propNative("track-list/" .. trackId .. "/default")
     local trackForced = propNative("track-list/" .. trackId .. "/forced")
     local trackExternal = propNative("track-list/" .. trackId .. "/external")
