@@ -55,6 +55,7 @@ Original: https://github.com/oltodosel/mpv-scripts/blob/master/pause-indicator.l
 
 Changes:
 - Pause icon is now less obtrusive and is placed in top right corner.
+- Shows hourglass icon when buffering or seeking.
 
 ## recent
 
