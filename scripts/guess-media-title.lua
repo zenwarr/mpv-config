@@ -67,6 +67,11 @@ local function on_done(success, result, error)
 end
 
 
+local function starts_with(str, prefix)
+    return string.sub(str, 1, #prefix) == prefix
+end
+
+
 local function should_guess()
     path = mp.get_property_native("path")
     if path == nil then
@@ -74,11 +79,6 @@ local function should_guess()
     end
 
     return not (starts_with(path, "http://") or starts_with(path, "https://"))
-end
-
-
-local function starts_with(str, prefix)
-    return string.sub(str, 1, #prefix) == prefix
 end
 
 
