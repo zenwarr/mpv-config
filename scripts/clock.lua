@@ -5,7 +5,8 @@ local options = require "mp.options"
 local script_options = {
     position = "bottom-right",
     size = 13,
-    time_format = "%H:%M", -- details: https://www.lua.org/pil/22.1.html
+    time_format = "%H:%M", -- details: https://www.lua.org/pil/22.1.html,
+    show_end = true
 }
 options.read_options(script_options)
 
@@ -51,7 +52,21 @@ local format_str = "{" .. get_alignment_spec(script_options.position) .. "\\fs" 
 
 
 local function get_clock()
-    return os.date(script_options.time_format)
+    local clock = os.date(script_options.time_format)
+    if not script_options.show_end then
+        return clock
+    end
+
+    local dt = os.date("*t")
+    local rem = mp.get_property_native("playtime-remaining")
+    if rem == nil then
+        return clock
+    end
+
+    dt.sec = dt.sec + rem
+    local formatted_end = " [ends at " .. os.date("%H:%M", os.time(dt)) .. "]"
+
+    return clock .. formatted_end
 end
 
 
