@@ -51,7 +51,8 @@ end
 --update the list when the current chapter changes
 mp.observe_property('chapter', 'number', reinit_list)
 
-mp.add_key_binding("F4", "toggle-chapter-browser", function()
+mp.register_script_message("toggle", function()
+    print("Chapter List")
     reinit_list()
     list:toggle()
 end)
