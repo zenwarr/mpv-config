@@ -52,7 +52,6 @@ end
 mp.observe_property('chapter', 'number', reinit_list)
 
 mp.register_script_message("toggle", function()
-    print("Chapter List")
     reinit_list()
     list:toggle()
 end)
