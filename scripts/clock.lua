@@ -6,7 +6,8 @@ local script_options = {
     position = "bottom-right",
     size = 13,
     time_format = "%H:%M", -- details: https://www.lua.org/pil/22.1.html,
-    show_end = true
+    show_end = true,
+    end_prefix = "ends at "
 }
 options.read_options(script_options)
 
@@ -64,7 +65,7 @@ local function get_clock()
     end
 
     dt.sec = dt.sec + rem
-    local formatted_end = " [ends at " .. os.date("%H:%M", os.time(dt)) .. "]"
+    local formatted_end = " [" .. script_options.end_prefix .. os.date("%H:%M", os.time(dt)) .. "]"
 
     return clock .. formatted_end
 end
