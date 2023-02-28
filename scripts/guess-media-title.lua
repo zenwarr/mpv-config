@@ -67,7 +67,26 @@ local function on_done(success, result, error)
 end
 
 
+local function should_guess()
+    path = mp.get_property_native("path")
+    if path == nil then
+        return false
+    end
+
+    return not (starts_with(path, "http://") or starts_with(path, "https://"))
+end
+
+
+local function starts_with(str, prefix)
+    return string.sub(str, 1, #prefix) == prefix
+end
+
+
 local function guess_media_title()
+    if not should_guess() then
+        return
+    end
+
     mp.command_native_async({
         name = "subprocess",
         capture_stdout = true,
