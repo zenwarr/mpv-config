@@ -550,7 +550,7 @@ function update_search_results_async(query, live)
     end)
 end
 
-mp.add_key_binding('ctrl+f', 'search-toggle', function()
+mp.register_script_message('start-search', function()
     if input_console.is_repl_active() then
         input_console.set_active(false)
     else
@@ -561,7 +561,7 @@ mp.add_key_binding('ctrl+f', 'search-toggle', function()
     end
 end)
 
-mp.add_key_binding("ctrl+shift+f", 'sub-list-toggle', function()
+mp.register_script_message('show-all-lines', function()
     update_search_results_async("*", true)
 end)
 

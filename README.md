@@ -122,6 +122,13 @@ Requires `script-modules/utf8` repository, `script-modules/scroll-list.lua`, `sc
 
 You can clone `script-modules/utf8` repository with the following command (assuming you are in mpv config directory): `git clone git@github.com:Stepets/utf8.lua.git script-modules/utf8`
 
+You should add the following bindings into your `input.conf` file after script installation:
+
+```
+Ctrl+f script-message-to subtitle_search start-search
+Ctrl+Shift+f script-message-to subtitle_search show-all-lines
+```
+
 ## toggle-osc
 
 Allows toggling osc on/off with a hotkey.
