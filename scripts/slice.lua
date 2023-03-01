@@ -2,11 +2,6 @@ local msg = require "mp.msg"
 local utils = require "mp.utils"
 local options = require "mp.options"
 
-local cut_pos = nil
-local copy_audio = true
-local ext_map = {
-    ["mpegts"] = "ts",
-}
 local o = {
     ffmpeg_path = "ffmpeg",
     target_dir = "~~/cutfragments",
@@ -14,6 +9,13 @@ local o = {
 }
 
 options.read_options(o)
+
+local cur_slice_start = nil
+local cur_slice_end = nil
+local copy_audio = true
+local is_preview_mode = false
+local is_rendering = false
+local status_overlay = mp.create_osd_overlay('ass-events')
 
 Command = { }
 
@@ -30,7 +32,7 @@ function Command:new(name)
     return o
 end
 function Command:arg(...)
-    for _, v in ipairs({...}) do
+    for _, v in ipairs({ ... }) do
         self.args[#self.args + 1] = v
     end
     return self
@@ -48,25 +50,6 @@ function Command:run()
     return res, err
 end
 
-local function file_format()
-    local fmt = mp.get_property("file-format")
-    if not fmt:find(',') then
-        return fmt
-    end
-    local filename = mp.get_property('filename')
-    local name = mp.get_property('filename/no-ext')
-    return filename:sub(name:len() + 2)
-end
-
-local function get_ext()
-    local fmt = file_format()
-    if ext_map[fmt] ~= nil then
-        return ext_map[fmt]
-    else
-        return fmt
-    end
-end
-
 local function timestamp(duration)
     local hours = math.floor(duration / 3600)
     local minutes = math.floor(duration % 3600 / 60)
@@ -78,96 +61,237 @@ local function osd(str)
     return mp.osd_message(str, 3)
 end
 
-local function info(s)
-    msg.info(s)
-    osd(s)
-end
-
 local function get_outname(shift, endpos)
     local name = mp.get_property("media-title")
-    local ext = get_ext()
-    name = string.format("%s_%s-%s.%s", name, timestamp(shift), timestamp(endpos), ext)
+    name = string.format("%s_%s-%s.%s", name, timestamp(shift), timestamp(endpos), ".mp4")
     return name:gsub(":", "-")
 end
 
-local function cut(shift, endpos)
+local function cut()
     local inpath = mp.get_property("stream-open-filename")
     local outpath = utils.join_path(
-        o.target_dir,
-        get_outname(shift, endpos)
+            o.target_dir,
+            get_outname(cur_slice_start, cur_slice_end)
     )
     local ua = mp.get_property('user-agent')
     local referer = mp.get_property('referrer')
+
+    local audio_track = mp.get_property_native("current-tracks/audio/ff-index")
+    local video_track = mp.get_property_native("current-tracks/video/ff-index")
+
     local cmds = Command:new(o.ffmpeg_path)
-        :arg("-v", "warning")
-        :arg(o.overwrite and "-y" or "-n")
-        :arg("-stats")
+                        :arg("-v", "warning")
+                        :arg(o.overwrite and "-y" or "-n")
+                        :arg("-accurate_seek")
     if ua and ua ~= '' and ua ~= 'libmpv' then
         cmds:arg('-user_agent', ua)
     end
     if referer and referer ~= '' then
         cmds:arg('-referer', referer)
     end
-    cmds:arg("-ss", tostring(shift))
-        :arg("-to", tostring(endpos))
+    cmds:arg("-ss", tostring(cur_slice_start))
+        :arg("-to", tostring(cur_slice_end))
         :arg("-i", inpath)
         :arg(not copy_audio and "-an" or nil)
+        :arg("-map_chapters", "-1")
+        :arg("-map", string.format("0:v:%d", video_track))
+        :arg("-map", string.format("0:a:%d", audio_track))
         :arg(outpath)
     msg.info("Run commands: " .. cmds:as_str())
 
-    local enc_overlay = mp.create_osd_overlay('ass-events')
-    enc_overlay.data = "{\\a3\\fs20}Encoding cut fragment..."
-    enc_overlay:update()
-
     local res, err = cmds:run()
+
     if err then
         msg.error(utils.to_string(err))
-        enc_overlay.data = "{\\a3\\fs20\\c&HFF&}Error: " .. utils.to_string(err)
-        enc_overlay:update()
-    elseif res.stderr ~= "" or res.stdout ~= "" then
-        msg.info("stderr: " .. (res.stderr:gsub("^%s*(.-)%s*$", "%1"))) -- trim stderr
-        msg.info("stdout: " .. (res.stdout:gsub("^%s*(.-)%s*$", "%1"))) -- trim stdout
-        enc_overlay.data = "{\\a3\\fs20\\c&HFF00&}Encoding completed"
-        enc_overlay:update()
+        status_overlay.data = "{\\a0\\fs20\\c&HFF&}Error: " .. utils.to_string(err)
+    else
+        if res.stderr ~= "" or res.stdout ~= "" then
+            msg.info("stderr: " .. (res.stderr:gsub("^%s*(.-)%s*$", "%1"))) -- trim stderr
+            msg.info("stdout: " .. (res.stdout:gsub("^%s*(.-)%s*$", "%1"))) -- trim stdout
+        end
+        status_overlay.data = "{\\a0\\fs20\\c&HFF00&}Encoding completed"
     end
 
+    status_overlay:update()
+
     mp.add_timeout(2, function()
-        enc_overlay:remove()
+        if status_overlay ~= nil then
+            status_overlay:remove()
+        end
     end)
 end
 
-local function toggle_mark()
+local function update_osd()
+    if cur_slice_start == nil and cur_slice_end == nil then
+        status_overlay:remove()
+        return
+    end
+
+    local slice_start = (cur_slice_start and timestamp(cur_slice_start)) or "<not set>"
+    local slice_end = (cur_slice_end and timestamp(cur_slice_end)) or "<not set>"
+
+    local cur_slice_offset = 0
+    local offset_percent = nil
+
+    if is_preview_mode and cur_slice_start ~= nil and cur_slice_end ~= nil then
+        cur_slice_offset = mp.get_property_native("time-pos") - cur_slice_start
+        offset_percent = ((cur_slice_offset + 0.0) / (cur_slice_end - cur_slice_start)) * 100
+        offset_percent = string.format("%.1f", offset_percent)
+    end
+
+    status_overlay.data = ""
+
+    if is_preview_mode and offset_percent ~= nil then
+        status_overlay.data = status_overlay.data .. "{\\a0\\fs20}"
+        status_overlay.data = status_overlay.data .. "Preview (p again to stop): " .. offset_percent .. "%\n"
+    end
+
+    status_overlay.data = status_overlay.data .. "{\\a0\\fs20}"
+    status_overlay.data = status_overlay.data .. "Fragment: " .. slice_start .. " - " .. slice_end .. "\n"
+
+    status_overlay.data = status_overlay.data .. "{\\a0\\fs20}"
+    status_overlay.data = status_overlay.data .. "Press c to set start, C to set end, ENTER to cut, ESC to cancel, p to preview, HOME to jump to slice start, END to jump to the end"
+
+    status_overlay:update()
+end
+
+local function slice_set_start()
     local pos, err = mp.get_property_number("time-pos")
     if not pos then
         osd("Failed to get timestamp")
         msg.error("Failed to get timestamp: " .. err)
         return
     end
-    if cut_pos then
-        local shift, endpos = cut_pos, pos
-        if shift > endpos then
-            shift, endpos = endpos, shift
-        elseif shift == endpos then
-            osd("Cut fragment is empty")
-            return
-        end
-        cut_pos = nil
-        info(string.format("Cut fragment: %s-%s", timestamp(shift), timestamp(endpos)))
-        cut(shift, endpos)
-    else
-        cut_pos = pos
-        info(string.format("Marked %s as start position", timestamp(pos)))
+
+    if cur_slice_end ~= nil and pos > cur_slice_end then
+        osd("Start timestamp must be less than end timestamp")
+        return
     end
+
+    cur_slice_start = pos
+    update_osd()
 end
 
-local function toggle_audio()
-    copy_audio = not copy_audio
-    info("Audio capturing is " .. (copy_audio and "enabled" or "disabled"))
+local function slice_set_end()
+    local pos, err = mp.get_property_number("time-pos")
+    if not pos then
+        osd("Failed to get timestamp")
+        msg.error("Failed to get timestamp: " .. err)
+        return
+    end
+
+    if cur_slice_start ~= nil and pos < cur_slice_start then
+        osd("End timestamp must be greater than start timestamp")
+        return
+    end
+
+    cur_slice_end = pos
+    update_osd()
 end
 
-local function clear_toggle_mark()
-    cut_pos = nil
-    info("Cleared cut fragment")
+local function remove_bindings()
+    mp.remove_key_binding("set_start")
+    mp.remove_key_binding("set_end")
+    mp.remove_key_binding("cut")
+    mp.remove_key_binding("cancel")
+    mp.remove_key_binding("preview")
+    mp.remove_key_binding("jump_start")
+    mp.remove_key_binding("jump_end")
+end
+
+local function slice_cancel()
+    cur_slice_start = nil
+    cur_slice_end = nil
+    is_preview_mode = false
+    is_rendering = false
+    remove_bindings()
+    update_osd()
+end
+
+local function slice_cut()
+    if not cur_slice_start or not cur_slice_end then
+        osd("Slice boundaries not set")
+        return
+    end
+
+    is_rendering = true
+
+    status_overlay.data = "{\\a0\\fs20}Encoding video fragment..."
+    status_overlay:update()
+
+    cut()
+    cur_slice_start = nil
+    cur_slice_end = nil
+    is_preview_mode = false
+    is_rendering = false
+    remove_bindings()
+end
+
+local function stop_preview()
+    if not is_preview_mode then
+        return
+    end
+
+    is_preview_mode = false
+    mp.set_property_native("ab-loop-a", nil)
+    mp.set_property_native("ab-loop-b", nil)
+    mp.set_property_native("pause", true)
+    update_osd()
+end
+
+local function slice_preview()
+    if is_preview_mode then
+        stop_preview()
+        return
+    end
+
+    if cur_slice_start == nil or cur_slice_end == nil then
+        osd("Slice boundaries not set")
+        return
+    end
+
+    is_preview_mode = true
+    mp.set_property_native("ab-loop-a", cur_slice_start)
+    mp.set_property_native("ab-loop-b", cur_slice_end)
+    mp.set_property_native("time-pos", cur_slice_start)
+    mp.set_property_native("pause", false)
+end
+
+local function slice_jump_start()
+    if cur_slice_start == nil then
+        osd("Slice start not set")
+        return
+    end
+
+    stop_preview()
+    mp.set_property_native("time-pos", cur_slice_start)
+end
+
+local function slice_jump_end()
+    if cur_slice_end == nil then
+        osd("Slice end not set")
+        return
+    end
+
+    stop_preview()
+    mp.set_property_native("time-pos", cur_slice_end)
+end
+
+local function set_bindings()
+    mp.add_forced_key_binding("c", "set_start", slice_set_start)
+    mp.add_forced_key_binding("C", "set_end", slice_set_end)
+    mp.add_forced_key_binding("ENTER", "cut", slice_cut)
+    mp.add_forced_key_binding("ESC", "cancel", slice_cancel)
+    mp.add_forced_key_binding("p", "preview", slice_preview)
+    mp.add_forced_key_binding("HOME", "jump_start", slice_jump_start)
+    mp.add_forced_key_binding("END", "jump_end", slice_jump_end)
+end
+
+local function editor_start()
+    print("editor_start")
+    set_bindings()
+    slice_set_start()
+    update_osd()
 end
 
 o.target_dir = o.target_dir:gsub('"', "")
@@ -179,10 +303,10 @@ if not file then
     local windows_args = { 'powershell', '-NoProfile', '-Command', 'mkdir', savepath }
     local unix_args = { 'mkdir', savepath }
     local args = is_windows and windows_args or unix_args
-    local res = mp.command_native({name = "subprocess", capture_stdout = true, playback_only = false, args = args})
+    local res = mp.command_native({ name = "subprocess", capture_stdout = true, playback_only = false, args = args })
     if res.status ~= 0 then
-      msg.error("Failed to create target_dir save directory "..savepath..". Error: "..(res.error or "unknown"))
-      return
+        msg.error("Failed to create target_dir save directory " .. savepath .. ". Error: " .. (res.error or "unknown"))
+        return
     end
 elseif not file.is_dir then
     osd("target_dir is a file")
@@ -190,6 +314,12 @@ elseif not file.is_dir then
 end
 o.target_dir = mp.command_native({ "expand-path", o.target_dir })
 
-mp.add_key_binding("c", "slicing_mark", toggle_mark)
-mp.add_key_binding("a", "slicing_audio", toggle_audio)
-mp.add_key_binding("C", "clear_slicing_mark", clear_toggle_mark)
+mp.register_script_message("start", editor_start)
+
+mp.observe_property("time-pos", "native", function()
+    if not is_preview_mode then
+        return
+    end
+
+    update_osd()
+end)
