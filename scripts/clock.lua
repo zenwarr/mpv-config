@@ -1,18 +1,21 @@
 local mp = require "mp"
 local options = require "mp.options"
 
-
 local script_options = {
     position = "bottom-right",
     size = 13,
     time_format = "%H:%M", -- details: https://www.lua.org/pil/22.1.html,
     show_end = true,
-    end_prefix = "ends at "
+    end_prefix = "ends at ",
+    enabled_by_default = true
 }
 options.read_options(script_options)
 
+local clock_overlay = mp.create_osd_overlay('ass-events')
+local overlay_visible = script_options.enabled_by_default
+local update_timer = nil
 
-local function get_alignment_spec(align)
+function get_alignment_spec(align)
     local default_align = 3
 
     local sep_index = string.find(align, "-")
@@ -48,11 +51,7 @@ local function get_alignment_spec(align)
     return "\\a" .. value
 end
 
-
-local format_str = "{" .. get_alignment_spec(script_options.position) .. "\\fs" .. script_options.size .. "}"
-
-
-local function get_clock()
+function get_clock()
     local clock = os.date(script_options.time_format)
     if not script_options.show_end then
         return clock
@@ -65,34 +64,52 @@ local function get_clock()
     end
 
     dt.sec = dt.sec + rem
-    local formatted_end = " [" .. script_options.end_prefix .. os.date("%H:%M", os.time(dt)) .. "]"
+    local formatted_end = " [" .. script_options.end_prefix .. os.date(script_options.time_format, os.time(dt)) .. "]"
 
     return clock .. formatted_end
 end
 
-
-local overlay_visible = true
-
-
-local ov = mp.create_osd_overlay('ass-events')
-ov.data = format_str .. get_clock()
-ov:update()
-
-mp.add_periodic_timer(0.5, function()
-    ov.data = format_str .. get_clock()
-
-    if overlay_visible then
-        ov:update()
+function update_clock()
+    if not overlay_visible then
+        return
     end
-end)
 
+    local ass_format_string = "{" .. get_alignment_spec(script_options.position) .. "\\fs" .. script_options.size .. "}"
+    clock_overlay.data = ass_format_string .. get_clock()
+    clock_overlay:update()
+end
+
+function activate_timer()
+    if not overlay_visible then
+        return
+    end
+
+    if update_timer ~= nil then
+        update_timer:resume()
+    else
+        update_timer = mp.add_periodic_timer(0.5, function()
+            update_clock()
+        end)
+    end
+end
+
+function deactivate_timer()
+    if update_timer ~= nil then
+        update_timer:kill()
+    end
+end
 
 mp.register_script_message("toggle", function()
     if overlay_visible then
-        ov:remove()
+        deactivate_timer()
+        clock_overlay:remove()
         overlay_visible = false
     else
-        ov:update()
         overlay_visible = true
+        update_clock()
+        activate_timer()
     end
 end)
+
+update_clock()
+activate_timer()
