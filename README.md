@@ -57,6 +57,19 @@ Changes:
 - Pause icon is now less obtrusive and is placed in top right corner.
 - Shows hourglass icon when buffering or seeking.
 
+You can configure the script using the following options in `script-opts/pause_indicator.conf`:
+
+```
+# position of the icon, first word is horizontal alignment, second is vertical (you can also use `center` shorthand for `center-center`)
+position=bottom-right
+
+# font size of the icon
+size=50
+
+# whether to show hourglass icon when buffering or seeking
+show_hourglass=no
+```
+
 ## recent
 
 Original: https://github.com/hacel/recent
