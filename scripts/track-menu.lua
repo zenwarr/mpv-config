@@ -99,102 +99,163 @@ local function selectTrack()
     end
 end
 
-local function getVideoTrackTitle(trackId)
-    local trackTitle = propNative("track-list/" .. trackId .. "/title")
-    local trackCodec = propNative("track-list/" .. trackId .. "/codec"):upper()
-    local trackImage = propNative("track-list/" .. trackId .. "/image")
-
-    local trackwh = (propNative("track-list/" .. trackId .. "/demux-w") or "?") .. "x" .. (propNative("track-list/" .. trackId .. "/demux-h") or "?")
-    local fps = propNative("track-list/" .. trackId .. "/demux-fps")
-    local trackFps
-    if fps then
-        trackFps = string.format("%.3f", fps)
+local function get_external_or_embed_string(track)
+    if track.external then
+        return "external"
     else
-        trackFps = "?"
+        local index = track["ff-index"]
+        if index then
+            return string.format("embedded #%d", index)
+        else
+            return "embedded"
+        end
+    end
+end
+
+local function getVideoTrackTitle(trackId)
+    local track = mp.get_property_native("track-list/" .. trackId)
+
+    local title = track.title
+    if title then
+        title = title:gsub(mp.get_property_native("filename/no-ext"), '')
     end
 
-    local trackDefault = propNative("track-list/" .. trackId .. "/default")
-    local trackForced = propNative("track-list/" .. trackId .. "/forced")
-    local trackExternal = propNative("track-list/" .. trackId .. "/external")
-    local filename = propNative("filename/no-ext")
-
-    if trackTitle then trackTitle = trackTitle:gsub(filename, '') end
-    if trackExternal then trackTitle = esc_for_title(trackTitle) end
-    if trackCodec:match("MPEG2") then trackCodec = "MPEG2"
-    elseif trackCodec:match("DVVIDEO") then trackCodec = "DV"
+    local codec = track.codec
+    if codec then
+        codec = codec:lower()
     end
 
-    if trackTitle and not trackImage then trackTitle = trackTitle .. "[" .. trackCodec .. "]" .. ", " .. trackwh .. ", " .. trackFps .. " FPS"
-    elseif trackTitle then trackTitle = trackTitle .. "[" .. trackCodec .. "]" .. ", " .. trackwh
-    elseif trackImage then trackTitle = "[" .. trackCodec .. "]" .. ", " .. trackwh
-    elseif trackFps then trackTitle = "[" .. trackCodec .. "]" .. ", " .. trackwh .. ", " .. trackFps .. " FPS"
+    local width = track["demux-w"]
+    local height = track["demux-h"]
+
+    local dims
+    if width and height then
+        dims = string.format("%sx%s", tostring(width), tostring(height))
     end
 
-    if trackForced then  trackTitle = trackTitle .. ", " .. "Forced" end
-    if trackDefault then  trackTitle = trackTitle .. ", " .. "Default" end
-    if trackExternal then  trackTitle = trackTitle .. ", " .. "External" end
+    local fps = track["demux-fps"]
+    if fps then
+        fps = string.format("%dfps", fps)
+    end
 
-    return list.ass_escape(trackTitle)
+    local is_external = track.external
+    if is_external and not title and track.external_filename then
+        title = track.external_filename
+    end
+
+    local main_title = title or dims or string.format("#%d", track["ff-index"] or trackId)
+
+    local dim_elem = nil
+    if main_title ~= dims then
+        dim_elem = dims
+    end
+    local sub_title = join({ dim_elem, fps, codec, get_external_or_embed_string(track) })
+
+    return list.ass_escape(main_title, 20) .. " {\\c&H999999&\\fs20}" .. list.ass_escape(sub_title) .. "{}"
 end
 
 local function getAudioTrackTitle(trackId)
-    local trackTitle = propNative("track-list/" .. trackId .. "/title")
-    local trackLang = propNative("track-list/" .. trackId .. "/lang")
-    local trackCodec = propNative("track-list/" .. trackId .. "/codec"):upper()
-    -- local trackBitrate = propNative("track-list/" .. trackId .. "/demux-bitrate") / 1000
-    local trackSamplerate = propNative("track-list/" .. trackId .. "/demux-samplerate") / 1000
-    local trackChannels = propNative("track-list/" .. trackId .. "/demux-channel-count")
-    local trackDefault = propNative("track-list/" .. trackId .. "/default")
-    local trackForced = propNative("track-list/" .. trackId .. "/forced")
-    local trackExternal = propNative("track-list/" .. trackId .. "/external")
-    local filename = propNative("filename/no-ext")
+    local track = mp.get_property_native("track-list/" .. trackId)
 
-    if trackTitle then trackTitle = trackTitle:gsub(filename, '') end
-    if trackExternal then trackTitle = esc_for_title(trackTitle) end
-    if trackCodec:match("PCM") then trackCodec = "PCM" end
-
-    if trackTitle and trackLang then trackTitle = trackTitle .. ", " .. trackLang .. "[" .. trackCodec .. "]" .. ", " .. trackChannels .. " ch" .. ", " .. trackSamplerate .. " kHz"
-    elseif trackTitle then trackTitle = trackTitle .. "[" .. trackCodec .. "]" .. ", " .. trackChannels .. " ch" .. ", " .. trackSamplerate .. " kHz"
-    elseif trackLang then trackTitle = trackLang .. "[" .. trackCodec .. "]" .. ", " .. trackChannels .. " ch" .. ", " .. trackSamplerate .. " kHz"
-    elseif trackChannels then trackTitle = "[" .. trackCodec .. "]" .. ", " .. trackChannels .. " ch" .. ", " .. trackSamplerate .. " kHz"
+    local title = track.title
+    if title then
+        title = title:gsub(mp.get_property_native("filename/no-ext"), '')
     end
 
-    if trackForced then  trackTitle = trackTitle .. ", " .. "Forced" end
-    if trackDefault then  trackTitle = trackTitle .. ", " .. "Default" end
-    if trackExternal then  trackTitle = trackTitle .. ", " .. "External" end
+    local lang = track.lang
+    if lang then
+        lang = lang:upper()
+    end
 
-    return list.ass_escape(trackTitle)
+    local codec = track.codec
+    if codec then
+        codec = codec:lower()
+    end
+
+    local bitrate = track["demux-samplerate"]
+    if bitrate then
+        bitrate = bitrate / 1000
+        bitrate = string.format("%.0fKHz", bitrate)
+    end
+
+    local channels = track["audio-channels"]
+    if channels then
+        channels = string.format("%d channels", channels)
+    end
+
+    local main_title = title or lang or string.format("#%d", track["ff-index"] or trackId)
+    local sub_title = join({ lang, codec, channels, bitrate, get_external_or_embed_string(track) })
+
+    return list.ass_escape(main_title, 20) .. " {\\c&H999999&\\fs20}" .. list.ass_escape(sub_title) .. "{}"
 end
 
 local function getSubTrackTitle(trackId)
-    local trackTitle = propNative("track-list/" .. trackId .. "/title")
-    local trackLang = propNative("track-list/" .. trackId .. "/lang")
-    local trackCodec = propNative("track-list/" .. trackId .. "/codec"):upper()
-    local trackDefault = propNative("track-list/" .. trackId .. "/default")
-    local trackForced = propNative("track-list/" .. trackId .. "/forced")
-    local trackExternal = propNative("track-list/" .. trackId .. "/external")
-    local filename = propNative("filename/no-ext")
+    local track = mp.get_property_native("track-list/" .. trackId)
 
-    if trackTitle then trackTitle = trackTitle:gsub(filename, '') end
-    if trackExternal then trackTitle = esc_for_title(trackTitle) end
-    if trackCodec:match("PGS") then trackCodec = "PGS"
-    elseif trackCodec:match("SUBRIP") then trackCodec = "SRT"
-    elseif trackCodec:match("VTT") then trackCodec = "VTT"
-    elseif trackCodec:match("DVB_SUB") then trackCodec = "DVB"
-    elseif trackCodec:match("DVD_SUB") then trackCodec = "VOB"
+    local title = track.title
+    if title then
+        title = title:gsub(mp.get_property_native("filename/no-ext"), '')
     end
 
-    if trackTitle and trackLang then trackTitle = trackTitle .. ", " .. trackLang .. "[" .. trackCodec .. "]"
-    elseif trackTitle then trackTitle = trackTitle .. "[" .. trackCodec .. "]"
-    elseif trackLang then trackTitle = trackLang .. "[" .. trackCodec .. "]"
-    elseif trackCodec then trackTitle = "[" .. trackCodec .. "]"
+    local lang = track.lang
+    if lang then
+        lang = lang:upper()
     end
 
-    if trackForced then  trackTitle = trackTitle .. ", " .. "Forced" end
-    if trackDefault then  trackTitle = trackTitle .. ", " .. "Default" end
-    if trackExternal then  trackTitle = trackTitle .. ", " .. "External" end
+    local codec = track.codec
+    if codec then
+        codec = codec:lower()
+    end
 
-    return list.ass_escape(trackTitle)
+    local main_title = title or lang or string.format("#%d", track["ff-index"] or trackId)
+    local sub_title = join({ lang, codec, get_external_or_embed_string(track) })
+
+    return list.ass_escape(main_title, 20) .. " {\\c&H999999&\\fs20}" .. list.ass_escape(sub_title) .. "{}"
+end
+
+function join(strings, delimiter)
+    delimiter = delimiter or ", "
+    local result = ""
+
+    for i, str in pairs(strings) do
+        if str then
+            result = result .. str
+
+            if i < #strings then
+                result = result .. delimiter
+            end
+        end
+    end
+
+    return result
+end
+
+function padString(str, length)
+    if #str < length then
+        return str .. string.rep(" ", length - #str)
+    else
+        return str
+    end
+end
+
+function printTable(obj, indent)
+    indent = indent or 2
+    local indentStr = string.rep(" ", indent)
+
+    if type(obj) == "table" then
+        for k, v in pairs(obj) do
+            io.write(indentStr, k, " = ")
+            if type(v) == "table" then
+                io.write("{\n")
+                printTable(v, indent + 2)
+                io.write(indentStr, "}\n")
+            else
+                io.write(tostring(v), "\n")
+            end
+        end
+    else
+        io.write(tostring(obj), "\n")
+    end
 end
 
 
