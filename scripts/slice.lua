@@ -4,8 +4,7 @@ local options = require "mp.options"
 
 local o = {
     ffmpeg_path = "ffmpeg",
-    target_dir = "~~/cutfragments",
-    overwrite = false, -- whether to overwrite exist files
+    target_dir = "~~/mpv_fragments"
 }
 
 options.read_options(o)
@@ -81,7 +80,6 @@ local function cut()
 
     local cmds = Command:new(o.ffmpeg_path)
                         :arg("-v", "warning")
-                        :arg(o.overwrite and "-y" or "-n")
                         :arg("-accurate_seek")
     if ua and ua ~= '' and ua ~= 'libmpv' then
         cmds:arg('-user_agent', ua)
@@ -197,6 +195,9 @@ local function remove_bindings()
     mp.remove_key_binding("preview")
     mp.remove_key_binding("jump_start")
     mp.remove_key_binding("jump_end")
+
+    mp.set_property_native("ab-loop-a", nil)
+    mp.set_property_native("ab-loop-b", nil)
 end
 
 local function slice_cancel()
