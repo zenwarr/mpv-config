@@ -100,7 +100,7 @@ local function cut()
     end
     cmds:arg("-ss", tostring(cur_slice_start))
         :arg("-to", tostring(cur_slice_end))
-        :arg("-i", inpath)
+        :arg("-i", '"' .. inpath .. '"')
         :arg(not copy_audio and "-an" or nil)
         :arg("-map_chapters", "-1")
         :arg("-map", string.format("0:%d", video_track_index))
