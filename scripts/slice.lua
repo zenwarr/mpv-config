@@ -119,7 +119,7 @@ local function cut()
         status_overlay.data = "{\\a0\\fs20\\c&HFF&}Error: " .. replace_newline_with_spaces(res.stderr)
     else
         log_cmd_output(res)
-        status_overlay.data = "{\\a0\\fs20\\c&HFF00&}Encoding completed"
+        status_overlay.data = "{\\a0\\fs20\\c&HFF00&}Encoding completed (saved to " .. outpath .. ")"
     end
 
     status_overlay:update()
