@@ -302,6 +302,12 @@ local function set_bindings()
 end
 
 local function editor_start()
+    local stream_filename = mp.get_property("stream-open-filename")
+    if string.sub(stream_filename, 1, 6) == "edl://" then
+        osd("Slicing is not supported for this file")
+        return
+    end
+
     set_bindings()
     slice_set_start()
     update_osd()
