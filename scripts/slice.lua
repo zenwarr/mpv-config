@@ -77,12 +77,6 @@ local function log_cmd_output(res)
     end
 end
 
-local function is_local_file(stream_filename)
-    -- try to extract scheme if this is an url
-    local scheme = stream_filename:match("^([%w]+)://")
-    return scheme == nil or scheme == "file"
-end
-
 local function cut()
     local inpath = mp.get_property("stream-open-filename")
     local outpath = utils.join_path(
@@ -106,7 +100,7 @@ local function cut()
     end
     cmds:arg("-ss", tostring(cur_slice_start))
         :arg("-to", tostring(cur_slice_end))
-        :arg("-i", '"' .. inpath .. '"')
+        :arg("-i", inpath)
         :arg(not copy_audio and "-an" or nil)
         :arg("-map_chapters", "-1")
         :arg("-map", string.format("0:%d", video_track_index))
@@ -308,11 +302,6 @@ local function set_bindings()
 end
 
 local function editor_start()
-    if not is_local_file(mp.get_property_native('stream-open-filename')) then
-        osd("Slicing this file is not possible: only local files are supported")
-        return
-    end
-
     set_bindings()
     slice_set_start()
     update_osd()
