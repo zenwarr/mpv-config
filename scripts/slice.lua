@@ -66,6 +66,17 @@ local function get_outname(shift, endpos)
     return name:gsub(":", "-")
 end
 
+local function replace_newline_with_spaces(str)
+    return str:gsub("\r?\n", " ")
+end
+
+local function log_cmd_output(res)
+    if res.stderr ~= "" or res.stdout ~= "" then
+        msg.info("stderr: " .. (res.stderr:gsub("^%s*(.-)%s*$", "%1"))) -- trim stderr
+        msg.info("stdout: " .. (res.stdout:gsub("^%s*(.-)%s*$", "%1"))) -- trim stdout
+    end
+end
+
 local function cut()
     local inpath = mp.get_property("stream-open-filename")
     local outpath = utils.join_path(
@@ -75,8 +86,8 @@ local function cut()
     local ua = mp.get_property('user-agent')
     local referer = mp.get_property('referrer')
 
-    local audio_track = mp.get_property_native("current-tracks/audio/ff-index")
-    local video_track = mp.get_property_native("current-tracks/video/ff-index")
+    local audio_track_index = mp.get_property_native("current-tracks/audio/ff-index")
+    local video_track_index = mp.get_property_native("current-tracks/video/ff-index")
 
     local cmds = Command:new(o.ffmpeg_path)
                         :arg("-v", "warning")
@@ -92,8 +103,8 @@ local function cut()
         :arg("-i", inpath)
         :arg(not copy_audio and "-an" or nil)
         :arg("-map_chapters", "-1")
-        :arg("-map", string.format("0:v:%d", video_track))
-        :arg("-map", string.format("0:a:%d", audio_track))
+        :arg("-map", string.format("0:%d", video_track_index))
+        :arg("-map", string.format("0:%d", audio_track_index))
         :arg(outpath)
     msg.info("Run commands: " .. cmds:as_str())
 
@@ -102,11 +113,12 @@ local function cut()
     if err then
         msg.error(utils.to_string(err))
         status_overlay.data = "{\\a0\\fs20\\c&HFF&}Error: " .. utils.to_string(err)
+    elseif res.status ~= 0 then
+        msg.error("ffmpeg exited with status " .. res.status)
+        log_cmd_output(res)
+        status_overlay.data = "{\\a0\\fs20\\c&HFF&}Error: " .. replace_newline_with_spaces(res.stderr)
     else
-        if res.stderr ~= "" or res.stdout ~= "" then
-            msg.info("stderr: " .. (res.stderr:gsub("^%s*(.-)%s*$", "%1"))) -- trim stderr
-            msg.info("stdout: " .. (res.stdout:gsub("^%s*(.-)%s*$", "%1"))) -- trim stdout
-        end
+        log_cmd_output(res)
         status_overlay.data = "{\\a0\\fs20\\c&HFF00&}Encoding completed"
     end
 
