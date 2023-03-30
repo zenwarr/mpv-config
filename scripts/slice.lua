@@ -62,7 +62,7 @@ end
 
 local function get_outname(shift, endpos)
     local name = mp.get_property("media-title")
-    name = string.format("%s_%s-%s.%s", name, timestamp(shift), timestamp(endpos), ".mp4")
+    name = string.format("%s_%s-%s.%s", name, timestamp(shift), timestamp(endpos), "mp4")
     return name:gsub(":", "-")
 end
 
