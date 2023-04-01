@@ -73,6 +73,11 @@ end
 
 
 local function should_guess()
+    forced = mp.get_property_native("force-media-title")
+    if forced ~= nil and forced ~= "" then
+        return false
+    end
+
     path = mp.get_property_native("path")
     if path == nil then
         return false
