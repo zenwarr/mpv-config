@@ -154,10 +154,22 @@ local function getVideoTrackTitle(trackId)
     return list.ass_escape(main_title, 20) .. " {\\c&H999999&\\fs20}" .. list.ass_escape(sub_title) .. "{}"
 end
 
-local function getAudioTrackTitle(trackId)
-    local track = mp.get_property_native("track-list/" .. trackId)
+local audio_track_name_overrides = {}
 
-    local title = track.title
+local function get_audio_track_name_override(filename, track_index)
+    return audio_track_name_overrides[filename .. "#" .. track_index]
+end
+
+local function overrideAudioTrackName(track_index, track_name)
+    filename = mp.get_property_native("filename")
+    audio_track_name_overrides[filename .. "#" .. track_index] = track_name
+end
+
+local function getAudioTrackTitle(trackId, trackIndex)
+    local track = mp.get_property_native("track-list/" .. trackId)
+    local filename = mp.get_property_native("filename")
+
+    local title = get_audio_track_name_override(filename, trackIndex) or track.title
     if title then
         title = title:gsub(mp.get_property_native("filename/no-ext"), '')
     end
@@ -238,27 +250,6 @@ function padString(str, length)
     end
 end
 
-function printTable(obj, indent)
-    indent = indent or 2
-    local indentStr = string.rep(" ", indent)
-
-    if type(obj) == "table" then
-        for k, v in pairs(obj) do
-            io.write(indentStr, k, " = ")
-            if type(v) == "table" then
-                io.write("{\n")
-                printTable(v, indent + 2)
-                io.write(indentStr, "}\n")
-            else
-                io.write(tostring(v), "\n")
-            end
-        end
-    else
-        io.write(tostring(obj), "\n")
-    end
-end
-
-
 local function updateTrackList(listTitle, trackDest, formatter)
     list.header = listTitle .. ": " .. o.header
     list.list = {
@@ -281,7 +272,7 @@ local function updateTrackList(listTitle, trackDest, formatter)
         for i = 1, #tracks, 1 do
             local trackIndex = tracks[i]
             local trackId = propNative("track-list/" .. trackIndex .. "/id")
-            local title = formatter(trackIndex)
+            local title = formatter(trackIndex, i - 1)
             local isDisabled = isTrackDisabled(trackId, trackDest)
 
             local listItem = {
@@ -385,6 +376,7 @@ mp.register_script_message("toggle-vidtrack-browser", openVideoTrackList)
 mp.register_script_message("toggle-audtrack-browser", openAudioTrackList)
 mp.register_script_message("toggle-subtrack-browser", openSubTrackList)
 mp.register_script_message("toggle-secondary-subtrack-browser", openSecondarySubTrackList)
+mp.register_script_message("override-audio-track-name", overrideAudioTrackName)
 
 mp.register_event("end-file", function()
     setTrackChangeHandler(nil, nil)
