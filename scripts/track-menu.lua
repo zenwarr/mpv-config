@@ -156,7 +156,7 @@ end
 
 local audio_track_name_overrides = {}
 
-local function get_audio_track_name_override(filename, track_index)
+local function getAudioTrackNameOverride(filename, track_index)
     return audio_track_name_overrides[filename .. "#" .. track_index]
 end
 
@@ -169,7 +169,7 @@ local function getAudioTrackTitle(trackId, trackIndex)
     local track = mp.get_property_native("track-list/" .. trackId)
     local filename = mp.get_property_native("filename")
 
-    local title = get_audio_track_name_override(filename, trackIndex) or track.title
+    local title = getAudioTrackNameOverride(filename, trackIndex) or track.title
     if title then
         title = title:gsub(mp.get_property_native("filename/no-ext"), '')
     end
@@ -201,10 +201,22 @@ local function getAudioTrackTitle(trackId, trackIndex)
     return list.ass_escape(main_title, 20) .. " {\\c&H999999&\\fs20}" .. list.ass_escape(sub_title) .. "{}"
 end
 
+local sub_track_name_override = {}
+
+local function getSubTrackNameOverride(filename, track_url)
+    return sub_track_name_override[filename .. "#" .. track_url]
+end
+
+local function overrideSubTrackName(track_url, track_name)
+    filename = mp.get_property_native("filename")
+    sub_track_name_override[filename .. "#" .. track_url] = track_name
+end
+
 local function getSubTrackTitle(trackId)
     local track = mp.get_property_native("track-list/" .. trackId)
+    local filename = mp.get_property_native("filename")
 
-    local title = track.title
+    local title = getSubTrackNameOverride(filename, track["external-filename"]) or track.title
     if title then
         title = title:gsub(mp.get_property_native("filename/no-ext"), '')
     end
@@ -377,6 +389,7 @@ mp.register_script_message("toggle-audtrack-browser", openAudioTrackList)
 mp.register_script_message("toggle-subtrack-browser", openSubTrackList)
 mp.register_script_message("toggle-secondary-subtrack-browser", openSecondarySubTrackList)
 mp.register_script_message("override-audio-track-name", overrideAudioTrackName)
+mp.register_script_message("override-sub-track-name", overrideSubTrackName)
 
 mp.register_event("end-file", function()
     setTrackChangeHandler(nil, nil)
