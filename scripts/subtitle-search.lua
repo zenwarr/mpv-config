@@ -10,7 +10,7 @@ Differences from the original script:
 - Takes into account current `sub-delay` value
 - Can search in embedded subtitles (requires ffmpeg to be installed to extract subtitles from video files)
 - Can search subtitles for youtube videos (requires ffmpeg to be installed to fetch remote subtitles)
-- Supports `.srt` and `.vtt` subtitle formats
+- Supports `.srt`, `.vtt` and `.sub` (microdvd) subtitle formats
 - Can use special phrase "*" to show all subtitle lines
 - Use `ctrl+shift+f` shortcut to show all subtitle lines simultaneously and dynamically highlight the current line
 
