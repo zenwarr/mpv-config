@@ -79,6 +79,18 @@ function open_file(path)
     return nil
 end
 
+function is_supported_network_protocol(url)
+    local protocols = { "http", "https" }
+
+    for _, protocol in pairs(protocols) do
+        if url:sub(1, #protocol + 3) == protocol .. "://" then
+            return true
+        end
+    end
+
+    return false
+end
+
 function get_sub_filename_async(track_name, on_done)
     local active_track = mp.get_property_native("current-tracks/" .. track_name)
     if active_track == nil then
@@ -92,6 +104,11 @@ function get_sub_filename_async(track_name, on_done)
     -- youtube subtitles specified with edl format
     if is_external and external_filename and external_filename:sub(1, 6) == "edl://" then
         download_subtitle_async(external_filename:match("https://.*"), on_done)
+        return
+    end
+
+    if is_external and external_filename and is_supported_network_protocol(external_filename) then
+        download_subtitle_async(external_filename, on_done)
         return
     end
 
