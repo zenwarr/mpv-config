@@ -352,6 +352,48 @@ function get_encoding_from_bom(data)
     return nil
 end
 
+function is_microdvd_sub(data)
+    return data:match("{%d+}{%d+}")
+end
+
+function parse_microdvd_sub(data)
+    local result = {}
+    local lines = get_lines(data)
+
+    -- if the first line contains only number, it's a subtitle fps
+    local subtitle_fps = tonumber(lines[1])
+    if subtitle_fps == nil or subtitle_fps == 0 then
+        subtitle_fps = mp.get_property_native("container-fps")
+        if subtitle_fps == nil or subtitle_fps == 0 then
+            subtitle_fps = 24
+        end
+    end
+
+    msg.info("Using " .. subtitle_fps .. "fps for microdvd subtitle")
+
+    for _, line in ipairs(lines) do
+        local time_text = line:match("^{(%d+)}{(%d+)}")
+        if time_text then
+            local start_frame = tonumber(time_text:match("^(%d+)"))
+
+            local text = line:match("^{%d+}{%d+}(.*)")
+            text = text:gsub("|", " ")
+            if text then
+                table.insert(result, {
+                    time = frame_to_secs(start_frame, subtitle_fps),
+                    text = text
+                })
+            end
+        end
+    end
+
+    return result
+end
+
+function frame_to_secs(frame, subtitle_fps)
+    return frame / subtitle_fps
+end
+
 function parse_sub(data)
     bom_encoding = get_encoding_from_bom(data)
     if bom_encoding ~= nil then
@@ -376,6 +418,10 @@ function parse_sub(data)
 
     if data:sub(1, 6) == "WEBVTT" then
         return parse_vtt_sub(data)
+    end
+
+    if is_microdvd_sub(data) then
+        return parse_microdvd_sub(data)
     end
 
     local result = {}
