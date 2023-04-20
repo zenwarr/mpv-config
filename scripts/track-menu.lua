@@ -157,6 +157,10 @@ end
 local audio_track_name_overrides = {}
 
 local function getAudioTrackNameOverride(filename, track_index)
+    if track_index == nil then
+        return nil
+    end
+
     return audio_track_name_overrides[filename .. "#" .. track_index]
 end
 
@@ -204,6 +208,10 @@ end
 local sub_track_name_override = {}
 
 local function getSubTrackNameOverride(filename, track_url)
+    if track_url == nil then
+        return nil
+    end
+
     return sub_track_name_override[filename .. "#" .. track_url]
 end
 
