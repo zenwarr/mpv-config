@@ -116,9 +116,6 @@ local function getVideoTrackTitle(trackId)
     local track = mp.get_property_native("track-list/" .. trackId)
 
     local title = track.title
-    if title then
-        title = title:gsub(mp.get_property_native("filename/no-ext"), '')
-    end
 
     local codec = track.codec
     if codec then
@@ -174,9 +171,6 @@ local function getAudioTrackTitle(trackId, trackIndex)
     local filename = mp.get_property_native("filename")
 
     local title = getAudioTrackNameOverride(filename, trackIndex) or track.title
-    if title then
-        title = title:gsub(mp.get_property_native("filename/no-ext"), '')
-    end
 
     local lang = track.lang
     if lang then
@@ -225,9 +219,6 @@ local function getSubTrackTitle(trackId)
     local filename = mp.get_property_native("filename")
 
     local title = getSubTrackNameOverride(filename, track["external-filename"]) or track.title
-    if title then
-        title = title:gsub(mp.get_property_native("filename/no-ext"), '')
-    end
 
     local lang = track.lang
     if lang then
