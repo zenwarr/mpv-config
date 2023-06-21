@@ -71,7 +71,7 @@ local function isTrackSelected(trackId, dest)
     return selectedId == trackId
 end
 
-local function isTrackDisabled(trackId, dest)
+local function isTrackSelectedElsewhere(trackId, dest)
     return (dest == "sub2" and isTrackSelected(trackId, "sub")) or (dest == "sub" and isTrackSelected(trackId, "sub2"))
 end
 
@@ -92,8 +92,14 @@ local function selectTrack()
         elseif listDest == "audio" then
             mp.set_property_native("aid", trackId)
         elseif listDest == "sub" then
+            if mp.get_property_native("secondary-sid") == trackId then
+                mp.set_property_native("secondary-sid", false)
+            end
             mp.set_property_native("sid", trackId)
         elseif listDest == "sub2" then
+            if mp.get_property_native("sid") == trackId then
+                mp.set_property_native("sid", false)
+            end
             mp.set_property_native("secondary-sid", trackId)
         end
     end
@@ -284,18 +290,18 @@ local function updateTrackList(listTitle, trackDest, formatter)
             local trackIndex = tracks[i]
             local trackId = propNative("track-list/" .. trackIndex .. "/id")
             local title = formatter(trackIndex, i - 1)
-            local isDisabled = isTrackDisabled(trackId, trackDest)
+            local isSelectedElsewhere = isTrackSelectedElsewhere(trackId, trackDest)
 
             local listItem = {
                 id = trackId,
                 index = trackIndex,
-                disabled = isDisabled
+                disabled = false
             }
             if isTrackSelected(trackId, trackDest) then
                 list.selected = i + 1
                 listItem.style = [[{\c&H33ff66&}]]
                 listItem.ass = "● " .. title
-            elseif isDisabled then
+            elseif isSelectedElsewhere then
                 listItem.style = [[{\c&Hff6666&}]]
                 listItem.ass = "○ " .. title
             else
