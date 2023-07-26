@@ -55,6 +55,10 @@ local function get_dir(path)
 end
 
 local function get_common_prefix_len(items)
+    if #items == 0 then
+        return 0
+    end
+    
     local prefix = get_dir(items[1])
 
     for i = 1, #items[1] do
