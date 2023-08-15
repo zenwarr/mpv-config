@@ -77,7 +77,22 @@ local function log_cmd_output(res)
     end
 end
 
+local function remove_bindings()
+    mp.remove_key_binding("set_start")
+    mp.remove_key_binding("set_end")
+    mp.remove_key_binding("cut")
+    mp.remove_key_binding("cancel")
+    mp.remove_key_binding("preview")
+    mp.remove_key_binding("jump_start")
+    mp.remove_key_binding("jump_end")
+
+    mp.set_property_native("ab-loop-a", nil)
+    mp.set_property_native("ab-loop-b", nil)
+end
+
 local function cut()
+    remove_bindings()
+
     local inpath = mp.get_property("stream-open-filename")
     local outpath = utils.join_path(
             o.target_dir,
@@ -198,19 +213,6 @@ local function slice_set_end()
 
     cur_slice_end = pos
     update_osd()
-end
-
-local function remove_bindings()
-    mp.remove_key_binding("set_start")
-    mp.remove_key_binding("set_end")
-    mp.remove_key_binding("cut")
-    mp.remove_key_binding("cancel")
-    mp.remove_key_binding("preview")
-    mp.remove_key_binding("jump_start")
-    mp.remove_key_binding("jump_end")
-
-    mp.set_property_native("ab-loop-a", nil)
-    mp.set_property_native("ab-loop-b", nil)
 end
 
 local function slice_cancel()
