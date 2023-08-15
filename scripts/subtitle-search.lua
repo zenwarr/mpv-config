@@ -13,6 +13,7 @@ Differences from the original script:
 - Supports `.srt`, `.vtt` and `.sub` (microdvd) subtitle formats
 - Can use special phrase "*" to show all subtitle lines
 - Use `ctrl+shift+f` shortcut to show all subtitle lines simultaneously and dynamically highlight the current line
+- Press `Ctrl+Shift+Enter` in result list to adjust `sub-delay` so that selected subtitle line is displayed at the current position
 
 Requires `script-modules/utf8` repository, `script-modules/scroll-list.lua`, `script-modules/sha1.lua`, `script-modules/utf8_data.lua` and `script-modules/input-console.lua` to work.
 
@@ -55,6 +56,19 @@ table.insert(result_list.keybinds, {
 
         local selected = result_list.list[selected_index]
         mp.commandv("seek", selected.time, "absolute+exact")
+    end, {}
+})
+table.insert(result_list.keybinds, {
+    "Ctrl+Shift+ENTER", "sync_to_result", function()
+        local selected_index = result_list.selected
+        if selected_index == nil then
+            return
+        end
+
+        local selected = result_list.list[selected_index]
+        local old_delay = mp.get_property_native("sub-delay")
+        local delay = -(selected.original_time - mp.get_property_native("time-pos"))
+        mp.set_property_native("sub-delay", delay)
     end, {}
 })
 
@@ -598,6 +612,7 @@ function update_search_results_async(query, live)
 
                     table.insert(result_list.list, {
                         sub = sub,
+                        original_time = sub_line.time,
                         time = sub_time + 0.01, -- to ensure that the subtitle is visible
                         ass = sub_text
                     })
@@ -612,6 +627,7 @@ function update_search_results_async(query, live)
 
         result_list.selected = closest_lower_index
         result_list.header = "Search results for \"" .. query .. "\"\\N ------------------------------------"
+        result_list.header = result_list.header .. "\\NENTER to jump to subtitle, Ctrl+Shift+Enter to adjust subtitle timing to selected line"
 
         result_list:update()
         result_list:open()
