@@ -339,6 +339,10 @@ function remove_tags(text)
     text = string.gsub(text, "</?%d%d:%d%d.%d%d%d>", "")
     text = string.gsub(text, "</?%d%d:%d%d:%d%d.%d%d%d>", "")
 
+    -- remove font tag
+    text = string.gsub(text, '<font color="#?[%d%a]+">', "")
+    text = string.gsub(text, '</font>', "")
+
     return text
 end
 
