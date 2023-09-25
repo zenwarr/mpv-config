@@ -78,20 +78,30 @@ update_timer = mp.add_periodic_timer(0.05, function()
 end)
 update_timer:kill()
 
-utils.shared_script_property_observe("osc-margins", function(_, val)
-    if val then
-        -- formatted as "%f,%f,%f,%f" with left, right, top, bottom, each
-        -- value being the border size as ratio of the window size (0.0-1.0)
-        local vals = {}
-        for v in string.gmatch(val, "[^,]+") do
-            vals[#vals + 1] = tonumber(v)
+if utils.shared_script_property_observe then
+    utils.shared_script_property_observe("osc-margins", function(_, val)
+        if val then
+            -- formatted as "%f,%f,%f,%f" with left, right, top, bottom, each
+            -- value being the border size as ratio of the window size (0.0-1.0)
+            local vals = {}
+            for v in string.gmatch(val, "[^,]+") do
+                vals[#vals + 1] = tonumber(v)
+            end
+            global_margin_y = vals[4] -- bottom
+        else
+            global_margin_y = 0
         end
-        global_margin_y = vals[4] -- bottom
-    else
-        global_margin_y = 0
-    end
-    update()
-end)
+        update()
+    end)
+else
+    mp.observe_property("user-data/osc/margins", "native", function(_, val)
+        if val then
+            global_margin_y = val.b
+        else
+            global_margin_y = 0
+        end
+    end)
+end
 
 -- Add a line to the log buffer (which is limited to 100 lines)
 function log_add(style, text)
