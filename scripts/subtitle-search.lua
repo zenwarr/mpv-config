@@ -523,8 +523,7 @@ function make_nocase_pattern(s)
 end
 
 -- highlight found text with colored text in ass syntax
--- todo: it breaks current item highlighting right now
-function highlight_match(text, match_text)
+function highlight_match(text, match_text, style_reset)
     local match_start, match_end = utf8.find(utf8.lower(text), utf8.lower(match_text))
     if match_start == nil then
         return text
@@ -534,7 +533,11 @@ function highlight_match(text, match_text)
     local match = result_list.ass_escape(utf8.sub(text, match_start, match_end))
     local after = result_list.ass_escape(utf8.sub(text, match_end + 1))
 
-    return before .. "{\\c&HFF00&}" .. match .. "{\\c&HFFFFFF&}" .. after
+    if style_reset == "" then
+        style_reset = "{\\c&HFFFFFF&}"
+    end
+
+    return before .. "{\\c&HFF00&}" .. match .. style_reset .. after
 end
 
 function adjust_sub_time(time)
@@ -607,18 +610,21 @@ function update_search_results_async(query, live)
             for _, sub_line in ipairs(sub.lines) do
                 if query == "*" or utf8.match(sub_line.text, pat) then
                     local sub_time = adjust_sub_time(sub_line.time)
-                    local sub_text = result_list.ass_escape(format_time(sub_time) .. ": ") ..
-                            highlight_match(sub_line.text, query)
-
-                    if #subs > 1 then
-                        sub_text = "[" .. sub.prefix .. "] " .. sub_text
-                    end
 
                     table.insert(result_list.list, {
                         sub = sub,
                         original_time = sub_line.time,
                         time = sub_time + 0.01, -- to ensure that the subtitle is visible
-                        ass = sub_text
+                        formatter = function(style_reset)
+                            local sub_text = result_list.ass_escape(format_time(sub_time) .. ": ") ..
+                                    highlight_match(sub_line.text, query, style_reset)
+
+                            if #subs > 1 then
+                                sub_text = "[" .. sub.prefix .. "] " .. sub_text
+                            end
+
+                            return sub_text
+                        end
                     })
 
                     if sub_time <= cur_time and (closest_lower_time == nil or closest_lower_time < sub_time) then

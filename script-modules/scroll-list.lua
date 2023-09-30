@@ -77,13 +77,23 @@ end
 function scroll_list:format_line(index, item)
     self:append(self.list_style)
 
-    if index == self.selected then self:append(self.cursor_style..self.cursor..self.selected_style)
-    else self:append(self.indent) end
+    style_reset = ""
+    if index == self.selected then
+        self:append(self.cursor_style..self.cursor..self.selected_style)
+        style_reset = self.selected_style -- can break for some complex styling involved
+    else
+        self:append(self.indent)
+    end
 
     self:append(item.style)
-    self:append(item.ass)
+    if item.formatter ~= nil then
+        self:append(item.formatter(style_reset))
+    else
+        self:append(item.ass)
+    end
+
     self:newline()
-end
+    end
 
 --refreshes the ass text using the contents of the list
 function scroll_list:update_ass()
