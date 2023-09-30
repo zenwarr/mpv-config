@@ -11,9 +11,6 @@ A script was written from scratch if there is no link.
 
 Original: https://github.com/CogentRedTester/mpv-scroll-list
 
-Changes:
-- Supports HOME and END keys to quickly jump to the start or the end of a list
-
 ## boss
 
 Boss key.

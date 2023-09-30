@@ -1,5 +1,4 @@
 local mp = require 'mp'
-
 local scroll_list = {
     global_style = [[]],
     header_style = [[{\q2\fs35\c&00ccff&}]],
@@ -44,11 +43,16 @@ function scroll_list.ass_escape(str, replace_newline)
     return str
 end
 
+--format and return the header string
+function scroll_list:format_header_string(str)
+    return str
+end
+
 --appends the entered text to the overlay
 function scroll_list:append(text)
-        if text == nil then return end
-        self.ass.data = self.ass.data .. text
-    end
+    if text == nil then return end
+    self.ass.data = self.ass.data .. text
+end
 
 --appends a newline character to the osd
 function scroll_list:newline()
@@ -65,7 +69,7 @@ end
 --prints the header to the overlay
 function scroll_list:format_header()
     self:append(self.header_style)
-    self:append(self.header)
+    self:append(self:format_header_string(self.header))
     self:newline()
 end
 
@@ -137,24 +141,46 @@ function scroll_list:scroll_down()
     end
 end
 
--- moves the selector to the top of the list
-function scroll_list:scroll_top()
-    self.selected = 1
-    self:update_ass()
-end
-
--- moves the selector to the bottom of the list
-function scroll_list:scroll_bottom()
-    self.selected = #self.list
-    self:update_ass()
-end
-
 --moves the selector up the list
 function scroll_list:scroll_up()
     if self.selected > 1 then
         self.selected = self.selected - 1
         self:update_ass()
     elseif self.wrap then
+        self.selected = #self.list
+        self:update_ass()
+    end
+end
+
+--moves the selector to the list next page
+function scroll_list:move_pagedown()
+    if #self.list > self.num_entries then
+        self.selected = self.selected + self.num_entries
+        if self.selected > #self.list then self.selected = #self.list end
+        self:update_ass()
+    end
+end
+
+--moves the selector to the list previous page
+function scroll_list:move_pageup()
+    if #self.list > self.num_entries then
+        self.selected = self.selected - self.num_entries
+        if self.selected < 1 then self.selected = 1 end
+        self:update_ass()
+    end
+end
+
+--moves the selector to the list begin
+function scroll_list:move_begin()
+    if #self.list > 1 then
+        self.selected = 1
+        self:update_ass()
+    end
+end
+
+--moves the selector to the list end
+function scroll_list:move_end()
+    if #self.list > 1 then
         self.selected = #self.list
         self:update_ass()
     end
@@ -194,7 +220,7 @@ function scroll_list:open()
 end
 
 --modifiable function that closes the list
-function scroll_list:close ()
+function scroll_list:close()
     self:remove_keybinds()
     self:close_list()
 end
@@ -254,9 +280,11 @@ function scroll_list:new()
         keybinds = {
             {'DOWN', 'scroll_down', function() vars:scroll_down() end, {repeatable = true}},
             {'UP', 'scroll_up', function() vars:scroll_up() end, {repeatable = true}},
-            {'ESC', 'close_browser', function() vars:close() end, {}},
-            {'HOME', 'scroll_top', function() vars:scroll_top() end, {}},
-            {'END', 'scroll_bottom', function() vars:scroll_bottom() end, {}}
+            {'PGDWN', 'move_pagedown', function() vars:move_pagedown() end, {}},
+            {'PGUP', 'move_pageup', function() vars:move_pageup() end, {}},
+            {'HOME', 'move_begin', function() vars:move_begin() end, {}},
+            {'END', 'move_end', function() vars:move_end() end, {}},
+            {'ESC', 'close_browser', function() vars:close() end, {}}
         }
     }
     return setmetatable(vars, metatable)
