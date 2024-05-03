@@ -2,15 +2,15 @@ local mp = require 'mp'
 local scroll_list = {
     global_style = [[]],
     header_style = [[{\q2\fs35\c&00ccff&}]],
-    list_style = [[{\q2\fs25\c&Hffffff&}]],
-    wrapper_style = [[{\c&00ccff&\fs16}]],
+    list_style = [[{\q2\fs40\c&Hffffff&}]],
+    wrapper_style = [[{\c&00ccff&\fs35}]],
     cursor_style = [[{\c&00ccff&}]],
     selected_style = [[{\c&Hfce788&}]],
 
     cursor = [[➤\h]],
     indent = [[\h\h\h\h]],
 
-    num_entries = 16,
+    num_entries = 10,
     wrap = false,
     empty_text = "no entries"
 }

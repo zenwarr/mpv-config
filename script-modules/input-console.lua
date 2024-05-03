@@ -22,7 +22,7 @@ local assdraw = require 'mp.assdraw'
 local opts = {
     -- All drawing is scaled by this value, including the text borders and the
     -- cursor. Change it if you have a high-DPI display.
-    scale = 1.3,
+    scale = 3.0,
     -- Set the font used for the REPL and the console. This probably doesn't
     -- have to be a monospaced font.
     font = "",

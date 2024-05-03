@@ -7,7 +7,8 @@ local script_options = {
     time_format = "%H:%M", -- details: https://www.lua.org/pil/22.1.html,
     show_end = true,
     end_prefix = "ends at ",
-    enabled_by_default = true
+    enabled_by_default = true,
+    alpha = "CC"
 }
 options.read_options(script_options)
 
@@ -74,7 +75,9 @@ function update_clock()
         return
     end
 
-    local ass_format_string = "{" .. get_alignment_spec(script_options.position) .. "\\fs" .. script_options.size .. "}"
+    local alpha = "\\alpha&H" .. script_options.alpha
+    local size = "\\fs" .. script_options.size
+    local ass_format_string = "{" .. get_alignment_spec(script_options.position) .. size .. alpha .. "}"
     clock_overlay.data = ass_format_string .. get_clock()
     clock_overlay:update()
 end

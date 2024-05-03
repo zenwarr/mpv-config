@@ -37,6 +37,7 @@ local result_list = require("scroll-list")
 local utf8 = require("utf8/init")
 local utf8_data = require("utf8_data")
 local sha1 = require("sha1")
+local options = require "mp.options"
 
 utf8.config = {
     conversion = {
@@ -46,6 +47,11 @@ utf8.config = {
 }
 
 utf8:init()
+
+local script_options = {
+    show_list_help = true
+}
+options.read_options(script_options)
 
 table.insert(result_list.keybinds, {
     "ENTER", "jump_to_result", function()
@@ -637,7 +643,9 @@ function update_search_results_async(query, live)
 
         result_list.selected = closest_lower_index
         result_list.header = "Search results for \"" .. query .. "\"\\N ------------------------------------"
-        result_list.header = result_list.header .. "\\NENTER to jump to subtitle, Ctrl+Shift+Enter to adjust subtitle timing to selected line"
+        if script_options.show_help then
+            result_list.header = result_list.header .. "\\NENTER to jump to subtitle, Ctrl+Shift+Enter to adjust subtitle timing to selected line"
+        end
 
         result_list:update()
         result_list:open()
