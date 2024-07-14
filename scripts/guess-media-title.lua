@@ -17,7 +17,8 @@ local options = require("mp.options")
 
 
 local opts = {
-    show_detection_message = false
+    show_detection_message = false,
+    show_episode_title = true
 }
 
 options.read_options(opts, "guess-media-title")
@@ -44,6 +45,9 @@ local function build_title(info)
         return nil
     elseif info.type == "episode" and info.season ~= nil and type(info.season) == "number" and info.episode ~= nil and type(info.episode) == "number" then
         local episode_spec = string.format("s%02de%02d", info.season, info.episode)
+        if opts.show_episode_title and info.episode_title ~= nil and type(info.episode_title) == "string" then
+            return string.format("%s (%s — %s)", info.title, episode_spec, info.episode_title)
+        end
         return string.format("%s (%s)", info.title, episode_spec)
     else
         return info.title
