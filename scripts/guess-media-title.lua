@@ -51,7 +51,7 @@ local function build_title(info)
 end
 
 
-local function on_done(success, result, error)
+local function on_guessit_completed(success, result, error)
     if not success then
         msg.error("failed to guess media title: " .. error)
         return
@@ -75,12 +75,12 @@ end
 
 
 local function should_guess()
-    forced = mp.get_property_native("force-media-title")
+    local forced = mp.get_property_native("force-media-title")
     if forced ~= nil and forced ~= "" then
         return false
     end
 
-    path = mp.get_property_native("path")
+    local path = mp.get_property_native("path")
     if path == nil then
         return false
     end
@@ -98,8 +98,14 @@ local function guess_media_title()
         name = "subprocess",
         capture_stdout = true,
         args = { "python", "-m", "guessit", "--json", mp.get_property_native("filename") }
-    }, on_done)
+    }, on_guessit_completed)
 end
 
 
-mp.register_event("file-loaded", guess_media_title)
+local function on_file_end()
+    mp.set_property_native("force-media-title", "")
+end
+
+
+mp.register_event("start-file", guess_media_title)
+mp.register_event("end-file", on_file_end)
