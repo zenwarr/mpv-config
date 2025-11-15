@@ -159,9 +159,10 @@ Helps learning a foreign language with subtitles.
 Can translate and explain subtitle lines using LLM (currently only openrouter.ai API is supported).
 To install the script:
 
-1. Create openrouter.ai api key at https://openrouter.ai/settings/keys
-2. Copy `scripts/subai.lua` from this repository
-3. Create `script-opts/subai.conf` file and add the following settings:
+1. Make sure `curl` is installed and accessible in `PATH`.
+2. Create openrouter.ai api key at https://openrouter.ai/settings/keys
+3. Copy `scripts/subai.lua` from this repository
+4. Create `script-opts/subai.conf` file and add the following settings:
 
 ```
 # Replace YOUR_API_KEY with your openrouter key
@@ -174,7 +175,7 @@ target_language=Spanish
 model=anthropic/claude-sonnet-4.5
 ```
 
-4. Add key bindings to `input.conf`, for example:
+5. Add key bindings to `input.conf`, for example:
 
 ```
 F6 script-message-to subai run
