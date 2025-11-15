@@ -156,14 +156,19 @@ Changes:
 ## subai
 
 Helps learning a foreign language with subtitles.
-Can translate and explain subtitle lines using LLM (currently only openrouter.ai API is supported).
-To install the script:
+Can translate and explain subtitle lines using an LLM (currently only openrouter.ai API is supported).
 
-1. Make sure `curl` is installed and accessible in `PATH`.
-2. Create openrouter.ai api key at https://openrouter.ai/settings/keys
-3. Copy `scripts/subai.lua`, `script-modules/subtitle.lua`, `script-modules/sha1.lua` from this repository
-4. Install `utf8` dependency. You can clone `script-modules/utf8` repository with the following command (assuming you are in mpv config directory): `git clone git@github.com:Stepets/utf8.lua.git script-modules/utf8`
-5. Create `script-opts/subai.conf` file and add the following settings:
+To install the script:
+1. Ensure `curl` is installed and available in `PATH`.
+2. Create an openrouter.ai API key at https://openrouter.ai/settings/keys.
+3. Copy `scripts/subai.lua`, `script-modules/subtitle.lua`, and `script-modules/sha1.lua` from this repository.
+4. Install the `utf8` dependency:
+
+```
+git clone git@github.com:Stepets/utf8.lua.git script-modules/utf8
+```
+
+5. Create `script-opts/subai.conf` and add:
 
 ```
 # Replace YOUR_API_KEY with your openrouter key
@@ -176,18 +181,17 @@ target_language=Spanish
 model=anthropic/claude-sonnet-4.5
 ```
 
-6. Add key bindings to `input.conf`, for example:
+6. Add a key binding to `input.conf`, for example:
 
 ```
 F6 script-message-to subai run
 ```
 
-Now you can press `F6` and the script is going to translate and explain the currently displayed subtitle line.
-Press `F6` again to hide results.
+Press `F6` to translate and explain the currently displayed subtitle line. Press `F6` again to hide results.
 
-You can customize the prompt this script uses by creating `script-opts/subai.prompt.txt` file and writing your prompt in it.
-Look inside 'subai.lua' for the default prompt to start from.
-You can use some substitution variables that are going to be replaced before prompt is sent to openrouter, for example:
+You can customize the prompt used by the script by creating `script-opts/subai.prompt.txt` and writing your prompt there.
+See `subai.lua` for the default prompt to start with.
+You can use some substitution variables that are going to be replaced before the prompt is sent to openrouter, for example:
 
 ```
 You are translating into {target_lang}.
@@ -201,13 +205,12 @@ To enable this, set the following parameters in `script-opts/subai.conf`:
 # Enables sending additional context lines
 enable_context=yes
 
-# The script is going to send 5 lines before and 5 lines after the currently displayed subtitle line.
-# If 0, all lines are going to be sent.
+# The script will send 5 lines before and 5 lines after the current subtitle line.
+# If 0, all lines will be sent.
 max_context_neighbours=5
 
-# The script is going to additionally filter above lines by timestamp.
-# If the line is more than 10 minutes before or 10 minutes after the current line, it is not going to be sent.
-# It works even if max_context_neighbours is 0.
-# If 0, no lines are going to be filtered.
+# The script will filter context lines by timestamp.
+# Lines more than 10 minutes before or after the current line will be excluded.
+# If 0, no lines will be filtered.
 max_context_minutes=10
 ```
