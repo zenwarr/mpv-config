@@ -5,5 +5,6 @@ saved-subs.json
 saved-props.json
 script-opts/load-profiles.conf
 script-opts/thumbfast.conf
+script-opts/subai.conf
 !script-opts/.gitkeep
 history.log

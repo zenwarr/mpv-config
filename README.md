@@ -152,3 +152,42 @@ Original: https://github.com/dyphire/mpv-scripts/blob/main/track-menu.lua
 
 Changes:
 - Supports selecting secondary subtitle track
+
+## subai
+
+Helps learning a foreign language with subtitles.
+Can translate and explain subtitle lines using LLM (currently only openrouter.ai API is supported).
+To install the script:
+
+1. Create openrouter.ai api key at https://openrouter.ai/settings/keys
+2. Copy `scripts/subai.lua` from this repository
+3. Create `script-opts/subai.conf` file and add the following settings:
+
+```
+# Replace YOUR_API_KEY with your openrouter key
+openrouter_key=YOUR_API_KEY
+
+# Language to translate subtitles into
+target_language=Spanish
+
+# anthropic/claude-sonnet-4.5 model is used by default
+model=anthropic/claude-sonnet-4.5
+```
+
+4. Add key bindings to `input.conf`, for example:
+
+```
+F6 script-message-to subai run
+```
+
+Now you can press `F6` and the script is going to translate and explain the currently displayed subtitle line.
+Press `F6` again to hide results.
+
+You can customize the prompt this script uses by creating `script-opts/subai.prompt.txt` file and writing your prompt in it.
+Look inside 'subai.lua' for the default prompt to start from.
+You can use some substitution variables that are going to be replaced before prompt is sent to openrouter, for example:
+
+```
+You are translating into {target_lang}.
+The currently playing file title is {media_title}
+```
