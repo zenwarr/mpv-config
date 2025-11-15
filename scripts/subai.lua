@@ -14,7 +14,7 @@ local function read_prompt_file()
 
     local content = f:read("*a")
     f:close()
-    if not content or content = "" then
+    if not content or content == "" then
         return nil
     end
 
