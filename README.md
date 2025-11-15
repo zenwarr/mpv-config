@@ -161,8 +161,9 @@ To install the script:
 
 1. Make sure `curl` is installed and accessible in `PATH`.
 2. Create openrouter.ai api key at https://openrouter.ai/settings/keys
-3. Copy `scripts/subai.lua` from this repository
-4. Create `script-opts/subai.conf` file and add the following settings:
+3. Copy `scripts/subai.lua`, `script-modules/subtitle.lua`, `script-modules/sha1.lua` from this repository
+4. Install `utf8` dependency. You can clone `script-modules/utf8` repository with the following command (assuming you are in mpv config directory): `git clone git@github.com:Stepets/utf8.lua.git script-modules/utf8`
+5. Create `script-opts/subai.conf` file and add the following settings:
 
 ```
 # Replace YOUR_API_KEY with your openrouter key
@@ -175,7 +176,7 @@ target_language=Spanish
 model=anthropic/claude-sonnet-4.5
 ```
 
-5. Add key bindings to `input.conf`, for example:
+6. Add key bindings to `input.conf`, for example:
 
 ```
 F6 script-message-to subai run
@@ -191,4 +192,22 @@ You can use some substitution variables that are going to be replaced before pro
 ```
 You are translating into {target_lang}.
 The currently playing file title is {media_title}
+```
+
+The script can also send surrounding lines for the current line to provide additional context.
+To enable this, set the following parameters in `script-opts/subai.conf`:
+
+```
+# Enables sending additional context lines
+enable_context=yes
+
+# The script is going to send 5 lines before and 5 lines after the currently displayed subtitle line.
+# If 0, all lines are going to be sent.
+max_context_neighbours=5
+
+# The script is going to additionally filter above lines by timestamp.
+# If the line is more than 10 minutes before or 10 minutes after the current line, it is not going to be sent.
+# It works even if max_context_neighbours is 0.
+# If 0, no lines are going to be filtered.
+max_context_minutes=10
 ```

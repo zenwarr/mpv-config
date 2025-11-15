@@ -99,15 +99,7 @@ function highlight_match(text, match_text, style_reset)
     return before .. "{\\c&HFF00&}" .. match .. style_reset .. after
 end
 
-function adjust_sub_time(time)
-    local delay = mp.get_property_native("sub-delay")
-    if delay == nil then
-        return time
-    end
-    return time + delay
-end
-
-function divmod (a, b)
+function divmod(a, b)
     return math.floor(a / b), a % b
 end
 
@@ -166,7 +158,7 @@ function update_search_results_async(query, live)
         for _, sub in ipairs(subs) do
             for _, sub_line in ipairs(sub.lines) do
                 if query == "*" or utf8.match(sub_line.text, pat) then
-                    local sub_time = adjust_sub_time(sub_line.time)
+                    local sub_time = subtitle.adjust_sub_time(sub_line.time)
 
                     table.insert(result_list.list, {
                         sub = sub,

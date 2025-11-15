@@ -22,7 +22,7 @@ function sub_time_to_seconds(time, sep)
 end
 
 function is_supported_network_protocol(url)
-    local protocols = { "http", "https" }
+    local protocols = {"http", "https"}
 
     for _, protocol in pairs(protocols) do
         if url:sub(1, #protocol + 3) == protocol .. "://" then
@@ -82,7 +82,7 @@ function download_subtitle_async(url, on_done)
     mp.command_native_async({
         name = "subprocess",
         capture_stdout = true,
-        args = { "ffmpeg", "-y", "-hide_banner", "-loglevel", "error", "-i", url, "-vn", "-an", "-c:s", "srt", sub_path }
+        args = {"ffmpeg", "-y", "-hide_banner", "-loglevel", "error", "-i", url, "-vn", "-an", "-c:s", "srt", sub_path}
     }, function(ok)
         if not ok then
             extract_overlay.data = "{\\a3\\fs20\\c&HFF&}Extraction failed"
@@ -148,7 +148,8 @@ function extract_subtitle_track_async(track, on_done)
     mp.command_native_async({
         name = "subprocess",
         capture_stdout = true,
-        args = { "ffmpeg", "-y", "-hide_banner", "-loglevel", "error", "-i", full_path, "-map", "0:" .. track_index, "-vn", "-an", "-c:s", "srt", sub_path }
+        args = {"ffmpeg", "-y", "-hide_banner", "-loglevel", "error", "-i", full_path, "-map", "0:" .. track_index,
+                "-vn", "-an", "-c:s", "srt", sub_path}
     }, function(ok)
         if not ok then
             extract_overlay.data = "{\\a3\\fs20\\c&HFF&}Extraction failed"
@@ -286,7 +287,6 @@ function remove_tags(text)
     return text
 end
 
-
 -- detects only most common encodings
 function get_encoding_from_bom(data)
     -- utf8
@@ -359,10 +359,12 @@ function parse_sub(data)
             data = data:sub(3)
         else
             local error_overlay = mp.create_osd_overlay("ass-events")
-            error_overlay.data = "{\\a3\\fs20\\c&HFF&}Unsupported subtitle encoding: " .. bom_encoding .. ", please re-encode subtitle file to utf-8 to search"
+            error_overlay.data = "{\\a3\\fs20\\c&HFF&}Unsupported subtitle encoding: " .. bom_encoding ..
+                                     ", please re-encode subtitle file to utf-8 to search"
             error_overlay:update()
 
-            msg.error("Unsupported subtitle encoding: " .. bom_encoding .. ", please re-encode subtitle file to utf-8 to search")
+            msg.error("Unsupported subtitle encoding: " .. bom_encoding ..
+                          ", please re-encode subtitle file to utf-8 to search")
 
             mp.add_timeout(10, function()
                 error_overlay:remove()
@@ -453,7 +455,16 @@ function load_sub(path, prefix)
     return sub
 end
 
+function adjust_sub_time(time)
+    local delay = mp.get_property_native("sub-delay")
+    if delay == nil then
+        return time
+    end
+    return time + delay
+end
+
 return {
     load_primary_sub_async = load_primary_sub_async,
-    load_secondary_sub_async = load_secondary_sub_async
+    load_secondary_sub_async = load_secondary_sub_async,
+    adjust_sub_time = adjust_sub_time
 }
