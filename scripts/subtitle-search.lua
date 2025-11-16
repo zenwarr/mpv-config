@@ -26,12 +26,10 @@ Example:
     and voilá, the scene pops up.'
 --]]
 
+local mp = require("mp")
 
 package.path = package.path .. ";" .. mp.command_native({ "expand-path", "~~/script-modules/?.lua" })
 
-local mp = require("mp")
-local utils = require("mp.utils")
-local msg = require("mp.msg")
 local input_console = require("input-console")
 local result_list = require("scroll-list")
 local utf8 = require("utf8/init")

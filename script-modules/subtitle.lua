@@ -1,3 +1,6 @@
+local mp = require("mp")
+local msg = require("mp.msg")
+local utils = require("mp.utils")
 local sha1 = require("sha1")
 
 local subs_cache = {}

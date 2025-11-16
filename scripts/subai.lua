@@ -1,12 +1,13 @@
-package.path = package.path .. ";" .. mp.command_native({"expand-path", "~~/script-modules/?.lua"})
-
 local mp = require "mp"
 local options = require "mp.options"
 local utils = require "mp.utils"
+
+package.path = package.path .. ";" .. mp.command_native({ "expand-path", "~~/script-modules/?.lua" })
+
 local subtitle = require "subtitle"
 
 local function read_prompt_file()
-    local path = mp.command_native({"expand-path", "~~/script-opts/subai.prompt.txt"})
+    local path = mp.command_native({ "expand-path", "~~/script-opts/subai.prompt.txt" })
     local f, err = io.open(path, "r")
     if not f then
         return nil
@@ -50,7 +51,7 @@ Rules:
 - Do not explain basic linguistic forms (tense, voices, etc) unless it can cause misunderstanding or it is especially difficult.
 ]]
 
-local system_prompt = read_prompt_file() or default_prompt
+local system_prompt_template = read_prompt_file() or default_prompt
 
 local script_options = {
     openrouter_key = "",
@@ -108,10 +109,6 @@ local function get_current_sub_line_idx(sub)
     return found_idx
 end
 
-local function divmod(a, b)
-    return math.floor(a / b), a % b
-end
-
 local function format_time(time)
     local t = tonumber(time) or 0
     if t < 0 then t = 0 end
@@ -137,7 +134,7 @@ local function get_context_by_index(sub, cur_line_idx)
     local max_neib = tonumber(script_options.max_context_neighbours) or 0
     local max_minutes = tonumber(script_options.max_context_minutes) or 0
     local max_time_offset = max_minutes * 60
-    
+
     local cur_entry = sub.lines[cur_line_idx]
     local cur_time = cur_entry and subtitle.adjust_sub_time(cur_entry.time) or 0
 
@@ -206,21 +203,27 @@ local function get_current_subtitle_line_context_async(on_done)
             return
         end
 
-        sub_line_idx = get_current_sub_line_idx(sub)
+        local sub_line_idx = get_current_sub_line_idx(sub)
         on_done(get_context_by_index(sub, sub_line_idx))
     end)
 end
 
-local function build_payload(ctx)
-    local media_title = mp.get_property("force-media-title") or mp.get_property("media-title") or ""
-    local lang = script_options.target_language
-
-    local function _escape_for_gsub(s)
-        return tostring(s or ""):gsub("%%", "%%%%")
+local function get_media_title() 
+    local value = mp.get_property("force-media-title")
+    if value and value ~= "" then
+        return value
     end
 
-    local system_msg = system_prompt:gsub("{media_title}", _escape_for_gsub(media_title)):gsub("{target_lang}",
-        _escape_for_gsub(lang))
+    value = mp.get_property("media-title")
+    if value and value ~= "" then
+        return value
+    end
+
+    return "unknown"
+end
+
+local function build_payload(ctx)
+    local system_prompt = system_prompt_template:gsub("{media_title}", get_media_title()):gsub("{target_lang}", script_options.target_language)
 
     local user_msg = ""
     local function join_lines(tbl)
@@ -242,13 +245,13 @@ local function build_payload(ctx)
     end
 
     local body = {
-        messages = {{
+        messages = { {
             role = "system",
-            content = system_msg
+            content = system_prompt
         }, {
             role = "user",
             content = user_msg
-        }}
+        } }
     }
 
     if script_options.model and script_options.model ~= "" then
@@ -285,10 +288,17 @@ local function http_request_async(url, body_table, callback)
 
     log("info", "HTTP request: executing curl to " .. url .. " with body: " .. json_body)
 
-    local args = {"curl", "-sS", "-X", "POST", "-H", "Content-Type: application/json", "-H",
-                  "Authorization: Bearer " .. script_options.openrouter_key, "-H",
-                  "HTTP-Referer: https://github.com/zenwarr/mpv-config", "-H", "X-Title: mpv-subai", "--data-binary",
-                  json_body, url}
+    local args = {
+        "curl",
+        "-sS",
+        "-X", "POST",
+        "-H", "Content-Type: application/json",
+        "-H", "Authorization: Bearer " .. script_options.openrouter_key,
+        "-H", "HTTP-Referer: https://github.com/zenwarr/mpv-config",
+        "-H", "X-Title: mpv-subai",
+        "--data-binary", json_body,
+        url
+    }
 
     local function on_done(success, result, error)
         if not success then
@@ -341,10 +351,10 @@ local function display_result(text)
     local ass_prefix = ""
     local overrides = {}
 
-    local fs = sanitize_number(script_options.font_size, 16, 6, 200)
+    local fs = sanitize_number(script_options.font_size, 16)
     table.insert(overrides, string.format("\\fs%d", fs))
 
-    local fscy = sanitize_number(script_options.line_scale, 90, 50, 200)
+    local fscy = sanitize_number(script_options.line_scale, 90)
     table.insert(overrides, string.format("\\fscy%d", fscy))
 
     ass_prefix = string.format("{%s}", table.concat(overrides, ""))
@@ -357,7 +367,7 @@ local function display_result(text)
 end
 
 local function show_loading_indicator()
-    local loading_frames = {"⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"}
+    local loading_frames = { "⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏" }
     local frame_index = 1
 
     loading_visible = true
